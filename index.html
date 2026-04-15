@@ -2,217 +2,182 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>VungTauGO! Strava Mode</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>VungTauGO! Real-time Tracker</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
   
   <style>
-    :root { --primary: #00f2ff; --warn: #ff4d4d; --bg: #0d1117; }
+    :root { --strava-orange: #fc4c02; --dark-blue: #0b0e14; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', sans-serif; background: var(--bg); color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    body { font-family: 'Inter', sans-serif; background: var(--dark-blue); color: white; height: 100vh; overflow: hidden; }
     
-    #app { flex: 1; display: flex; flex-direction: column; max-width: 500px; margin: 0 auto; width: 100%; position: relative; }
-    
-    .dashboard { padding: 25px 20px; background: linear-gradient(180deg, #161b22 0%, rgba(22,27,34,0) 100%); z-index: 10; }
-    .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
-    .stat-card { background: rgba(33, 38, 45, 0.8); padding: 15px; border-radius: 20px; border: 1px solid #30363d; backdrop-filter: blur(10px); }
-    .stat-label { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; }
-    .stat-value { font-size: 32px; font-weight: 900; color: var(--primary); }
-    .unit { font-size: 14px; font-weight: 400; color: #fff; margin-left: 4px; }
+    /* Header Stats */
+    .top-bar {
+      position: absolute; top: 0; left: 0; right: 0; z-index: 1000;
+      background: linear-gradient(to bottom, rgba(11,14,20,0.9), transparent);
+      padding: 20px; display: flex; justify-content: space-around; text-align: center;
+    }
+    .stat-box { flex: 1; }
+    .stat-label { font-size: 12px; color: #9ca3af; text-transform: uppercase; margin-bottom: 4px; }
+    .stat-number { font-size: 32px; font-weight: 800; color: var(--strava-orange); }
+    .stat-unit { font-size: 14px; color: #fff; margin-left: 4px; }
 
-    #map { flex: 1; width: 100%; z-index: 1; }
+    #map { width: 100%; height: 100%; z-index: 1; }
 
-    .controls { position: absolute; bottom: 30px; left: 0; right: 0; padding: 0 20px; z-index: 100; display: flex; gap: 10px; }
-    .btn { flex: 1; padding: 18px; border-radius: 50px; border: none; font-weight: 800; font-size: 16px; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; }
-    .btn-start { background: var(--primary); color: #000; box-shadow: 0 0 20px rgba(0,242,255,0.4); }
-    .btn-stop { background: #30363d; color: #fff; }
+    /* Control Panel */
+    .bottom-ui {
+      position: absolute; bottom: 20px; left: 20px; right: 20px; z-index: 1000;
+      display: flex; flex-direction: column; gap: 15px;
+    }
+    .btn-main {
+      background: var(--strava-orange); color: white; border: none;
+      padding: 18px; border-radius: 16px; font-size: 18px; font-weight: bold;
+      box-shadow: 0 4px 15px rgba(252, 76, 2, 0.4); cursor: pointer;
+    }
+    .btn-main.active { background: #ef4444; }
+
+    .status-pill {
+      align-self: center; background: rgba(0,0,0,0.6); padding: 6px 15px;
+      border-radius: 20px; font-size: 12px; border: 1px solid #374151;
+    }
     
-    .toast { position: absolute; top: 120px; left: 50%; transform: translateX(-50%); background: var(--warn); color: white; padding: 10px 20px; border-radius: 30px; font-weight: bold; font-size: 13px; z-index: 1000; opacity: 0; transition: 0.3s; pointer-events: none; }
-    
-    .gps-tag { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.6); padding: 5px 12px; border-radius: 15px; font-size: 11px; z-index: 100; border: 1px solid #30363d; }
+    .penalty-flash {
+      position: fixed; inset: 0; background: rgba(239, 68, 68, 0.3);
+      z-index: 9999; pointer-events: none; display: none;
+      animation: flash 0.5s ease-out;
+    }
+    @keyframes flash { from { opacity: 1; } to { opacity: 0; } }
   </style>
 </head>
 <body>
 
-<div id="app">
-  <div class="toast" id="penaltyToast">PHÁT HIỆN GIAN LẬN!</div>
-  
-  <div class="dashboard">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-      <h2 style="font-weight: 900; letter-spacing: -1px;">VungTauGO! <span style="color: var(--primary);">PRO</span></h2>
-      <div id="gpsStatus" class="gps-tag">🛰️ GPS: N/A</div>
-    </div>
-    
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-label">Quãng đường</div>
-        <div class="stat-value" id="distDisplay">0.00<span class="unit">km</span></div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Bước chân</div>
-        <div class="stat-value" id="stepDisplay">0<span class="unit">bước</span></div>
-      </div>
-    </div>
-  </div>
+<div class="penalty-flash" id="flash"></div>
 
-  <div id="map"></div>
-
-  <div class="controls">
-    <button class="btn btn-start" id="mainBtn"><i class="fas fa-play"></i> BẮT ĐẦU</button>
-    <button class="btn btn-stop" id="stopBtn" style="display: none;"><i class="fas fa-stop"></i> KẾT THÚC</button>
+<div class="top-bar">
+  <div class="stat-box">
+    <div class="stat-label">Quãng đường</div>
+    <div id="km" class="stat-number">0.00<span class="stat-unit">km</span></div>
   </div>
+  <div class="stat-box">
+    <div class="stat-label">Bước chân</div>
+    <div id="steps" class="stat-number">0<span class="stat-unit">bước</span></div>
+  </div>
+</div>
+
+<div id="map"></div>
+
+<div class="bottom-ui">
+  <div class="status-pill" id="status">🛰️ Đang chờ tín hiệu GPS Vũng Tàu...</div>
+  <button class="btn-main" id="btnAction">BẮT ĐẦU THEO DÕI</button>
 </div>
 
 <script>
 (function() {
-    "use strict";
+  "use strict";
 
-    // Cấu hình đồng bộ
-    const CONFIG = {
-        minStride: 0.4,   // sải chân tối thiểu (mét)
-        maxStride: 1.2,   // sải chân tối đa (mét)
-        defaultStride: 0.7,
-        maxSpeedKmH: 25,  // Quá 25km/h coi như đi xe máy
-        penaltyValue: 20, // Trừ 20m mỗi lần vi phạm
-        shakeThreshold: 25 
-    };
+  const SETTINGS = {
+    stride: 0.75, // sải chân trung bình (m)
+    penalty: 50,  // trừ 50m mỗi lần vi phạm
+    maxSpeed: 7.0 // m/s (tương đương 25km/h)
+  };
 
-    let state = {
-        running: false,
-        distance: 0,      // đơn vị: km
-        steps: 0,
-        stride: CONFIG.defaultStride,
-        path: [],
-        lastPos: null,
-        shakeCounter: 0
-    };
+  let state = {
+    active: false,
+    steps: 0,
+    distanceM: 0,
+    path: [],
+    lastCoord: null
+  };
 
-    let map, polyline, marker;
+  let map, polyline, userMarker;
 
-    // Khởi tạo Map (Dark Mode mượt như Strava)
-    function initMap() {
-        map = L.map('map', { zoomControl: false, attributionControl: false }).setView([10.346, 107.084], 16);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+  // 1. Khởi tạo bản đồ & Tự động định vị
+  function init() {
+    map = L.map('map', { zoomControl: false, attributionControl: false }).setView([10.346, 107.084], 15);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+    
+    polyline = L.polyline([], { color: '#fc4c02', weight: 6, opacity: 0.9 }).addTo(map);
+    userMarker = L.circleMarker([0,0], { radius: 8, color: '#fff', fillColor: '#fc4c02', fillOpacity: 1 }).addTo(map);
+
+    // Bật định vị ngay lập tức
+    map.locate({ setView: true, watch: true, enableHighAccuracy: true });
+    map.on('locationfound', (e) => {
+      userMarker.setLatLng(e.latlng);
+      document.getElementById('status').innerText = `🛰️ GPS Chính xác: ${Math.round(e.accuracy)}m`;
+      if(state.active) handleMovement(e.latlng, e.speed);
+    });
+  }
+
+  // 2. Xử lý logic đồng bộ
+  function handleMovement(newLatLng, speed) {
+    // Chống gian lận tốc độ
+    if (speed > SETTINGS.maxSpeed) {
+      applyPenalty();
+      return;
+    }
+
+    if (state.lastCoord) {
+      const dist = map.distance(state.lastCoord, newLatLng);
+      if (dist > 2) { // Di chuyển trên 2m mới tính
+        state.distanceM += dist;
+        // ĐỒNG BỘ: Số bước = Quãng đường / Sải chân
+        state.steps = Math.floor(state.distanceM / SETTINGS.stride);
         
-        polyline = L.polyline([], {
-            color: '#00f2ff',
-            weight: 6,
-            opacity: 0.8,
-            lineJoin: 'round',
-            shadowBlur: 10,
-            shadowColor: '#00f2ff'
-        }).addTo(map);
-
-        marker = L.circleMarker([0,0], { radius: 8, color: '#fff', fillColor: '#00f2ff', fillOpacity: 1, weight: 3 }).addTo(map);
+        state.path.push(newLatLng);
+        polyline.setLatLngs(state.path);
+        updateUI();
+      }
     }
+    state.lastCoord = newLatLng;
+  }
 
-    function updateDisplay() {
-        document.getElementById('distDisplay').innerHTML = `${state.distance.toFixed(2)}<span class="unit">km</span>`;
-        document.getElementById('stepDisplay').innerHTML = `${Math.floor(state.steps)}<span class="unit">bước</span>`;
+  // 3. Xử lý đếm bước từ cảm biến (Dead Reckoning)
+  function handleSensor(e) {
+    if (!state.active) return;
+    const acc = e.accelerationIncludingGravity;
+    const total = Math.sqrt(acc.x**2 + acc.y**2 + acc.z**2);
+
+    if (total > 13.5) { // Ngưỡng nhận diện bước chạy
+      // Khi cảm biến báo có bước, nhưng GPS chưa kịp cập nhật (ví dụ đứng yên lắc máy)
+      // Ta có thể dùng logic này để check gian lận hoặc bù quãng đường
     }
+  }
 
-    function applyPenalty() {
-        const metersToSubtract = CONFIG.penaltyValue;
-        const stepsToSubtract = Math.round(metersToSubtract / state.stride);
+  function applyPenalty() {
+    state.distanceM = Math.max(0, state.distanceM - SETTINGS.penalty);
+    state.steps = Math.floor(state.distanceM / SETTINGS.stride);
+    
+    const flash = document.getElementById('flash');
+    flash.style.display = 'block';
+    setTimeout(() => flash.style.display = 'none', 500);
+    updateUI();
+  }
 
-        state.distance = Math.max(0, state.distance - (metersToSubtract / 1000));
-        state.steps = Math.max(0, state.steps - stepsToSubtract);
-        
-        const toast = document.getElementById('penaltyToast');
-        toast.style.opacity = 1;
-        setTimeout(() => toast.style.opacity = 0, 2000);
-        updateDisplay();
+  function updateUI() {
+    document.getElementById('km').innerHTML = `${(state.distanceM/1000).toFixed(2)}<span class="stat-unit">km</span>`;
+    document.getElementById('steps').innerHTML = `${state.steps}<span class="stat-unit">bước</span>`;
+  }
+
+  // Nút Bắt đầu
+  document.getElementById('btnAction').addEventListener('click', async function() {
+    if (!state.active) {
+      // Xin quyền cảm biến (IOS)
+      if (typeof DeviceMotionEvent.requestPermission === 'function') {
+        await DeviceMotionEvent.requestPermission();
+      }
+      window.addEventListener('devicemotion', handleSensor);
+      
+      state.active = true;
+      this.innerText = "DỪNG LẠI";
+      this.classList.add('active');
+    } else {
+      location.reload(); // Reset hoàn toàn
     }
+  });
 
-    // Fusion Logic: Kết hợp Sensor & GPS
-    function syncMovement(lat, lng, accuracy) {
-        if (!state.running) return;
-
-        const now = Date.now();
-        const currentCoord = L.latLng(lat, lng);
-
-        if (state.lastPos) {
-            const distM = map.distance(state.lastPos.coord, currentCoord);
-            const timeS = (now - state.lastPos.time) / 1000;
-            const speedKmh = (distM / timeS) * 3.6;
-
-            // Kiểm tra tính logic (Anti-Cheat)
-            if (speedKmh > CONFIG.maxSpeedKmH) {
-                applyPenalty(); // Chạy quá nhanh -> Trừ điểm
-                state.lastPos = { coord: currentCoord, time: now };
-                return;
-            }
-
-            // Nếu di chuyển hợp lệ (trên 2m để tránh nhiễu GPS đứng yên)
-            if (distM > 2 && accuracy < 30) {
-                state.distance += (distM / 1000);
-                
-                // Đồng bộ hóa bước chân dựa trên sải chân hiện tại
-                // Nếu sải chân chưa tối ưu, nó dùng sải chân mặc định
-                state.steps += (distM / state.stride);
-                
-                state.path.push(currentCoord);
-                polyline.setLatLngs(state.path);
-                marker.setLatLng(currentCoord);
-                map.panTo(currentCoord);
-            }
-        }
-        state.lastPos = { coord: currentCoord, time: now };
-        updateDisplay();
-    }
-
-    // Đếm bước vật lý để hiệu chỉnh sải chân (Stride Calibration)
-    function handleMotion(e) {
-        if (!state.running) return;
-        const acc = e.accelerationIncludingGravity;
-        const force = Math.sqrt(acc.x**2 + acc.y**2 + acc.z**2);
-
-        // Chống gian lận lắc máy
-        if (force > CONFIG.shakeThreshold) {
-            state.shakeCounter++;
-            if (state.shakeCounter > 10) {
-                applyPenalty();
-                state.shakeCounter = 0;
-            }
-            return;
-        }
-
-        // Đếm bước thô từ cảm biến để so khớp logic
-        // (Trong thực tế, ta dùng thuật toán Peak Detection ở đây)
-    }
-
-    async function toggleService() {
-        if (!state.running) {
-            if (typeof DeviceMotionEvent.requestPermission === 'function') {
-                const per = await DeviceMotionEvent.requestPermission();
-                if (per !== 'granted') return;
-            }
-            
-            window.addEventListener('devicemotion', handleMotion);
-            navigator.geolocation.watchPosition(
-                (p) => {
-                    document.getElementById('gpsStatus').innerText = `🛰️ GPS: ${Math.round(p.coords.accuracy)}m`;
-                    syncMovement(p.coords.latitude, p.coords.longitude, p.coords.accuracy);
-                },
-                null, { enableHighAccuracy: true }
-            );
-
-            state.running = true;
-            document.getElementById('mainBtn').innerHTML = '<i class="fas fa-pause"></i> TẠM DỪNG';
-            document.getElementById('stopBtn').style.display = 'flex';
-        } else {
-            state.running = false;
-            document.getElementById('mainBtn').innerHTML = '<i class="fas fa-play"></i> TIẾP TỤC';
-        }
-    }
-
-    document.getElementById('mainBtn').addEventListener('click', toggleService);
-    document.getElementById('stopBtn').addEventListener('click', () => location.reload());
-
-    initMap();
+  init();
 })();
 </script>
 </body>
