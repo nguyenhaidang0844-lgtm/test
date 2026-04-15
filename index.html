@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>🧭 Trail Tracker Pro · Anti‑Cheat · Compass Direction</title>
+  <title>🏆 Trail Tracker Pro · Anti‑Cheat · Indoor Dead Reckoning</title>
   <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -33,7 +33,7 @@
       overflow: hidden;
     }
     .header {
-      padding: 16px 18px 6px;
+      padding: 14px 18px 6px;
       text-align: center;
       border-bottom: 1px solid #2e6b58;
     }
@@ -59,9 +59,9 @@
     .stats-grid {
       display: flex;
       justify-content: space-evenly;
-      padding: 10px 6px;
+      padding: 8px 6px;
       background: #1a4136;
-      margin: 0 12px 10px;
+      margin: 0 12px 8px;
       border-radius: 48px;
       border: 1px solid #438b74;
       box-shadow: inset 0 2px 4px #0e2b21, 0 4px 0 #0a1f18;
@@ -71,56 +71,56 @@
       flex: 1;
     }
     .stat-label {
-      font-size: 0.7rem;
+      font-size: 0.65rem;
       text-transform: uppercase;
-      letter-spacing: 2px;
+      letter-spacing: 1.5px;
       color: #a5d4c1;
       font-weight: 500;
     }
     .stat-value {
-      font-size: 2.1rem;
+      font-size: 1.9rem;
       font-weight: 800;
       line-height: 1.1;
       color: #fbfff0;
       text-shadow: 0 2px 5px #0b241c;
     }
-    .unit { font-size: 0.8rem; color: #bbe6d6; margin-left: 2px; }
+    .unit { font-size: 0.7rem; color: #bbe6d6; margin-left: 2px; }
     .compass-panel {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 4px 16px 8px;
+      padding: 4px 16px 6px;
     }
     .direction-badge {
       background: #1f4a3b;
-      padding: 6px 18px;
+      padding: 5px 16px;
       border-radius: 40px;
       border: 1px solid #5ea58c;
       font-weight: 600;
-      font-size: 1.1rem;
+      font-size: 1.0rem;
       display: flex;
       align-items: center;
       gap: 6px;
     }
     .elev-badge {
       background: #1f4a3b;
-      padding: 6px 18px;
+      padding: 5px 16px;
       border-radius: 40px;
       border: 1px solid #5ea58c;
       font-weight: 600;
-      font-size: 1.1rem;
+      font-size: 1.0rem;
     }
     .status-area {
       display: flex;
       justify-content: space-between;
       padding: 0 18px 6px;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       color: #b0decb;
     }
     .controls {
       display: flex;
       gap: 10px;
-      padding: 10px 14px 20px;
+      padding: 8px 14px 18px;
       justify-content: center;
     }
     .btn {
@@ -129,27 +129,23 @@
       border-bottom: 4px solid #0c2b20;
       color: white;
       font-weight: bold;
-      font-size: 1.2rem;
-      padding: 12px 18px;
+      font-size: 1.1rem;
+      padding: 12px 16px;
       min-width: 100px;
       border-radius: 50px;
       cursor: pointer;
       box-shadow: 0 5px 0 #0a1e16, 0 2px 8px black;
       transition: 0.08s;
       text-transform: uppercase;
-      letter-spacing: 1.2px;
+      letter-spacing: 1px;
       flex: 1;
     }
     .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #0a1e16, 0 2px 6px black; }
     .btn:disabled { opacity: 0.5; transform: none; box-shadow: 0 4px 0 #0a1e16; pointer-events: none; }
     .btn.stop { background: #6b4e4e; border-bottom-color: #2e2121; }
     .btn.reset { background: #3f556b; border-bottom-color: #1f2b3a; }
-    .warning-tag {
-      color: #fcd34d;
-      font-size: 0.75rem;
-      margin-left: 8px;
-    }
-    .cheat-warning { color: #ff9e7a; font-weight: 500; }
+    .warning-tag { color: #fcd34d; font-size: 0.75rem; margin-left: 8px; }
+    .stride-info { font-size: 0.7rem; padding: 0 18px 4px; color: #9dcbb8; }
   </style>
 </head>
 <body>
@@ -158,7 +154,7 @@
     <h1>
       <span>🧭 TRAIL PRO</span>
       <span style="font-weight:300;">·</span>
-      <span>👣 STEP</span>
+      <span>🏆 STEP</span>
     </h1>
   </div>
   <div class="map-wrapper">
@@ -186,6 +182,7 @@
     </div>
     <div class="elev-badge" id="elevationDisplay">🏔️ -- m</div>
   </div>
+  <div class="stride-info" id="strideInfo">👣 Stride: 0.75m (calibrating...)</div>
   <div class="status-area">
     <span id="statusMessage">📍 Press START — allow motion & GPS</span>
     <span id="cheatWarning" class="warning-tag"></span>
@@ -195,8 +192,8 @@
     <button class="btn stop" id="stopBtn" disabled>⏹ STOP</button>
     <button class="btn reset" id="resetBtn">🔄 RESET</button>
   </div>
-  <div style="font-size:0.7rem; padding:0 16px 12px; color:#7daf9b;">
-    ⚡ Arrow shows device heading (Find My style) · Anti‑vehicle & anti‑swing
+  <div style="font-size:0.65rem; padding:0 16px 12px; color:#7daf9b;">
+    ⚡ Arrow = device heading · Indoor dead reckoning · Anti‑swing & vehicle
   </div>
 </div>
 
@@ -210,47 +207,63 @@
     const dirText = document.getElementById('dirText');
     const statusMessage = document.getElementById('statusMessage');
     const cheatWarning = document.getElementById('cheatWarning');
+    const strideInfo = document.getElementById('strideInfo');
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
     const resetBtn = document.getElementById('resetBtn');
 
-    // ----- Map -----
+    // ----- Map & tracking -----
     let map;
     let routePolyline;
     let currentMarker;
-    let headingMarker; // arrow
+    let headingMarker;
     let watchId = null;
     let trackingActive = false;
     
-    // Data
-    let positions = [];
-    let totalDistance = 0;
+    // Core data
+    let positions = [];               // GPS points (real)
+    let totalDistance = 0;            // km (from GPS when valid)
     let elevationGain = 0;
     let lastAltitude = null;
     let stepCount = 0;
     
     // Heading
-    let deviceHeading = 0;        // from compass (0-360)
+    let deviceHeading = 0;
     let hasCompass = false;
     
-    // Speed filter (anti-vehicle)
-    const MAX_SPEED_MPS = 8.0;    // ~28.8 km/h, faster than running
-    let lastValidPosition = null;
+    // ----- Stride length & calibration -----
+    let strideLengthM = 0.75;         // default, will calibrate
+    let strideCalibrated = false;
+    let gpsStepDistanceWindow = [];    // recent (gpsDist, steps) pairs for calibration
+    const CALIBRATION_WINDOW = 8;
     
-    // Step detection
+    // ----- Step detection with cadence validation (anti-cheat) -----
     let stepActive = false;
-    let accelBuffer = [];
-    const BUFFER_SIZE = 15;
+    // Motion filter
     const ALPHA = 0.15;
-    let gravityX=0, gravityY=0, gravityZ=0;
-    let lastStepTime = 0;
-    const MIN_STEP_MS = 280, MAX_STEP_MS = 1200;
-    let stepThreshold = 0.85;
+    let gravityX = 0, gravityY = 0, gravityZ = 0;
+    let accelBuffer = [];
+    const BUFFER_SIZE = 12;
+    // Step cadence validation
+    let stepTimestamps = [];           // last N step times
+    const CADENCE_WINDOW = 5;
+    const MIN_CADENCE_MS = 280;        // ~214 steps/min max
+    const MAX_CADENCE_MS = 1200;       // ~50 steps/min min
     let stepLock = false;
-    let swingCheatCount = 0;
-    const CHEAT_LIMIT = 5;
     let lastPeakTime = 0;
-
+    let stepThreshold = 0.85;
+    let swingCheatCounter = 0;
+    const CHEAT_RESET = 6;
+    
+    // For dead reckoning (indoor route)
+    let deadReckoningActive = false;
+    let lastDRPosition = null;         // {lat, lng} from last step projection
+    let drPathLatLngs = [];            // store for polyline
+    
+    // GPS quality
+    let lastGoodGPS = null;
+    const GPS_ACCURACY_THRESHOLD = 25;  // meters
+    
     // ----- Initialize Map -----
     function initMap() {
       map = L.map('map', { attributionControl: true, zoomControl: true }).setView([39.5, -98.0], 13);
@@ -268,7 +281,6 @@
         })
       }).addTo(map);
       
-      // Direction arrow (like Find My)
       headingMarker = L.marker([0,0], {
         icon: L.divIcon({
           className: 'heading-arrow',
@@ -278,7 +290,6 @@
       }).addTo(map);
     }
 
-    // Update arrow rotation and direction text
     function updateHeadingDisplay(headingDeg) {
       const arrow = document.getElementById('arrowDiv');
       if (arrow) arrow.style.transform = `rotate(${headingDeg}deg)`;
@@ -287,7 +298,7 @@
       dirText.textContent = `${dirs[idx]} ${Math.round(headingDeg)}°`;
     }
 
-    // ----- Geolocation processing with speed filter -----
+    // ----- Geospatial helpers -----
     function haversine(lat1, lon1, lat2, lon2) {
       const R = 6371;
       const dLat = (lat2-lat1)*Math.PI/180;
@@ -295,72 +306,143 @@
       const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
       return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
+    
+    function bearing(lat1, lon1, lat2, lon2) {
+      const φ1 = lat1 * Math.PI/180, φ2 = lat2 * Math.PI/180;
+      const Δλ = (lon2-lon1) * Math.PI/180;
+      const y = Math.sin(Δλ) * Math.cos(φ2);
+      const x = Math.cos(φ1)*Math.sin(φ2) - Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ);
+      return (Math.atan2(y, x)*180/Math.PI + 360) % 360;
+    }
+    
+    // Destination point given distance and bearing
+    function destination(lat, lon, distKm, brngDeg) {
+      const R = 6371;
+      const δ = distKm / R;
+      const θ = brngDeg * Math.PI / 180;
+      const φ1 = lat * Math.PI / 180;
+      const λ1 = lon * Math.PI / 180;
+      const φ2 = Math.asin(Math.sin(φ1)*Math.cos(δ) + Math.cos(φ1)*Math.sin(δ)*Math.cos(θ));
+      const λ2 = λ1 + Math.atan2(Math.sin(θ)*Math.sin(δ)*Math.cos(φ1), Math.cos(δ)-Math.sin(φ1)*Math.sin(φ2));
+      return { lat: φ2*180/Math.PI, lng: λ2*180/Math.PI };
+    }
 
-    function processPosition(pos) {
+    // ----- Process GPS (with quality checks) -----
+    function processGPSPosition(pos) {
       const crd = pos.coords;
+      const accuracy = crd.accuracy;
       const lat = crd.latitude, lng = crd.longitude;
       const alt = (crd.altitude !== null && crd.altitude !== undefined) ? crd.altitude : null;
       const ts = Date.now();
       
-      // Update map center and markers
+      const isGoodGPS = (accuracy <= GPS_ACCURACY_THRESHOLD);
+      
+      // Update map center and marker
       map.setView([lat, lng], map.getZoom());
       currentMarker.setLatLng([lat, lng]);
       headingMarker.setLatLng([lat, lng]);
       
-      // Speed check (anti-vehicle)
-      let isValidSegment = true;
+      // Distance & elevation (only if good GPS and not vehicle speed)
+      let gpsDistanceAdded = 0;
       if (positions.length > 0) {
         const prev = positions[positions.length-1];
         const distKm = haversine(prev.lat, prev.lng, lat, lng);
         const timeSec = (ts - prev.timestamp) / 1000;
-        if (timeSec > 0.5) {
-          const speedMps = (distKm * 1000) / timeSec;
-          if (speedMps > MAX_SPEED_MPS) {
-            isValidSegment = false;
-            cheatWarning.textContent = `🚗 Vehicle speed (${Math.round(speedMps*3.6)} km/h) ignored`;
-            statusMessage.textContent = '⚠️ Speed too high — distance not counted';
-            // Still add to route visually but not to distance/gain
-          } else {
-            cheatWarning.textContent = '';
+        const speedMps = timeSec > 0.5 ? (distKm*1000)/timeSec : 0;
+        
+        // Anti-vehicle: ignore if speed > 8 m/s (28.8 km/h)
+        if (speedMps <= 8.0) {
+          if (isGoodGPS) {
+            totalDistance += distKm;
+            gpsDistanceAdded = distKm;
+            if (lastAltitude !== null && alt !== null) {
+              const diff = alt - lastAltitude;
+              if (diff > 0.3 && diff < 60) elevationGain += diff;
+            }
           }
+          // Add to polyline
+          routePolyline.addLatLng([lat, lng]);
+        } else {
+          cheatWarning.textContent = `🚗 Vehicle speed ignored`;
+          // Still show route but not count distance
+          routePolyline.addLatLng([lat, lng]);
         }
+      } else {
+        routePolyline.addLatLng([lat, lng]);
       }
       
-      // Add to polyline (always show route)
-      routePolyline.addLatLng([lat, lng]);
-      
-      if (positions.length > 0 && isValidSegment) {
-        const prev = positions[positions.length-1];
-        const segDist = haversine(prev.lat, prev.lng, lat, lng);
-        totalDistance += segDist;
-        if (lastAltitude !== null && alt !== null) {
-          const diff = alt - lastAltitude;
-          if (diff > 0.3 && diff < 60) elevationGain += diff;
-        }
-      }
-      
-      positions.push({ lat, lng, alt, timestamp: ts });
+      // Store position
+      positions.push({ lat, lng, alt, timestamp: ts, accuracy });
       if (alt !== null) lastAltitude = alt;
       
+      // Update dead reckoning base if good GPS
+      if (isGoodGPS) {
+        lastGoodGPS = { lat, lng, timestamp: ts };
+        deadReckoningActive = false;
+        // If we have a DR path, we could integrate, but we just use GPS for now.
+        statusMessage.textContent = '📍 GPS tracking (good)';
+      } else {
+        if (!deadReckoningActive && lastGoodGPS) {
+          deadReckoningActive = true;
+          lastDRPosition = { ...lastGoodGPS };
+          drPathLatLngs = [ [lastGoodGPS.lat, lastGoodGPS.lng] ];
+        }
+        statusMessage.textContent = '📡 GPS weak · using dead reckoning';
+      }
+      
+      // Calibration: if we have good GPS and steps, update stride length
+      if (gpsDistanceAdded > 0.01 && stepCount > 5) {
+        const stepDist = stepCount * strideLengthM / 1000; // km
+        // Use a weighted update
+        const ratio = gpsDistanceAdded / stepDist;
+        if (ratio > 0.5 && ratio < 2.0) {
+          strideLengthM = strideLengthM * 0.7 + (gpsDistanceAdded * 1000 / stepCount) * 0.3;
+          strideCalibrated = true;
+          strideInfo.textContent = `👣 Stride: ${strideLengthM.toFixed(2)}m (calibrated)`;
+        }
+      }
+      
       updateUI();
-      if (isValidSegment) statusMessage.textContent = '📍 Live tracking';
     }
 
     function geoError(err) {
-      let msg = 'GPS weak';
-      if (err.code === 1) msg = '📍 Location permission denied';
-      else if (err.code === 2) msg = '📍 Signal unavailable';
-      statusMessage.textContent = msg;
+      statusMessage.textContent = '📍 GPS error · using dead reckoning';
+      if (!deadReckoningActive && lastGoodGPS) {
+        deadReckoningActive = true;
+        lastDRPosition = { ...lastGoodGPS };
+        drPathLatLngs = [ [lastGoodGPS.lat, lastGoodGPS.lng] ];
+      }
     }
 
-    // ----- Compass heading (device orientation) -----
+    // ----- Dead Reckoning: project position based on steps + heading -----
+    function applyDeadReckoningStep() {
+      if (!deadReckoningActive || !lastDRPosition) return;
+      
+      const stepDistKm = strideLengthM / 1000;
+      const heading = deviceHeading; // use current compass heading
+      
+      const newPos = destination(lastDRPosition.lat, lastDRPosition.lng, stepDistKm, heading);
+      lastDRPosition = newPos;
+      
+      // Add to polyline
+      routePolyline.addLatLng([newPos.lat, newPos.lng]);
+      // Update marker to new position (virtual)
+      currentMarker.setLatLng([newPos.lat, newPos.lng]);
+      headingMarker.setLatLng([newPos.lat, newPos.lng]);
+      map.setView([newPos.lat, newPos.lng], map.getZoom());
+      
+      // Distance increment (step-based)
+      totalDistance += stepDistKm;
+    }
+
+    // ----- Compass heading -----
     function handleOrientation(event) {
       if (!trackingActive) return;
       let heading = null;
       if (event.webkitCompassHeading) {
         heading = event.webkitCompassHeading;
       } else if (event.absolute && event.alpha !== null) {
-        heading = 360 - event.alpha; // alpha is compass direction
+        heading = 360 - event.alpha;
       }
       if (heading !== null) {
         deviceHeading = heading;
@@ -369,7 +451,7 @@
       }
     }
 
-    // ----- Advanced Step Detection (anti-swing) -----
+    // ----- Advanced Step Detection with Cadence Validation -----
     function handleMotion(event) {
       if (!stepActive || !trackingActive) return;
       const acc = event.accelerationIncludingGravity;
@@ -390,38 +472,71 @@
       const smoothed = accelBuffer.reduce((a,b)=>a+b,0) / accelBuffer.length;
       
       const now = Date.now();
+      
       if (smoothed > stepThreshold && !stepLock) {
-        const timeSince = now - lastPeakTime;
-        if (timeSince < 200) {
-          swingCheatCount++;
-          cheatWarning.textContent = `⚠️ Swing (${swingCheatCount}/${CHEAT_LIMIT})`;
-          if (swingCheatCount >= CHEAT_LIMIT) {
+        const timeSinceLastPeak = now - lastPeakTime;
+        
+        // Anti-swing: reject intervals < 200ms
+        if (timeSinceLastPeak < 200) {
+          swingCheatCounter++;
+          cheatWarning.textContent = `⚠️ Swing (${swingCheatCounter}/${CHEAT_RESET})`;
+          if (swingCheatCounter >= CHEAT_RESET) {
             stepCount = 0;
-            swingCheatCount = 0;
+            swingCheatCounter = 0;
             cheatWarning.textContent = '❌ Steps reset (cheating)';
             updateUI();
             setTimeout(() => cheatWarning.textContent = '', 2500);
           }
-        } else if (timeSince > MIN_STEP_MS && timeSince < MAX_STEP_MS) {
-          stepCount++;
-          lastPeakTime = now;
-          stepThreshold = 0.7 * stepThreshold + 0.3 * (smoothed * 0.55);
-          swingCheatCount = Math.max(0, swingCheatCount-1);
-          if (swingCheatCount === 0) cheatWarning.textContent = '';
-          updateUI();
-        } else if (timeSince >= MAX_STEP_MS) {
-          stepCount++;
-          lastPeakTime = now;
-          swingCheatCount = Math.max(0, swingCheatCount-1);
-          updateUI();
+        } else {
+          // Valid step timing
+          stepTimestamps.push(now);
+          if (stepTimestamps.length > CADENCE_WINDOW) stepTimestamps.shift();
+          
+          // Cadence validation: require at least 3 steps with consistent intervals
+          let validCadence = false;
+          if (stepTimestamps.length >= 3) {
+            const intervals = [];
+            for (let i=1; i<stepTimestamps.length; i++) intervals.push(stepTimestamps[i] - stepTimestamps[i-1]);
+            const avg = intervals.reduce((a,b)=>a+b,0)/intervals.length;
+            const withinRange = intervals.every(iv => iv >= MIN_CADENCE_MS && iv <= MAX_CADENCE_MS);
+            const consistent = intervals.every(iv => Math.abs(iv - avg) < 150);
+            validCadence = withinRange && consistent;
+          } else {
+            validCadence = true; // first few steps
+          }
+          
+          if (validCadence) {
+            stepCount++;
+            lastPeakTime = now;
+            stepThreshold = 0.7 * stepThreshold + 0.3 * (smoothed * 0.55);
+            swingCheatCounter = Math.max(0, swingCheatCounter-1);
+            if (swingCheatCounter === 0) cheatWarning.textContent = '';
+            
+            // Dead reckoning: if GPS is weak, project position
+            if (deadReckoningActive) {
+              applyDeadReckoningStep();
+            } else {
+              // Update stride calibration window with GPS
+              // (calibration handled in GPS callback)
+            }
+            
+            updateUI();
+          } else {
+            // Invalid cadence, ignore but don't reset
+            cheatWarning.textContent = '⚠️ Irregular cadence ignored';
+          }
         }
         stepLock = true;
         setTimeout(() => stepLock = false, 220);
       }
-      if (now - lastPeakTime > 3000) swingCheatCount = 0;
+      
+      if (now - lastPeakTime > 3000) {
+        swingCheatCounter = 0;
+        stepTimestamps = []; // reset cadence validation after pause
+      }
     }
 
-    // ----- UI -----
+    // ----- UI update -----
     function updateUI() {
       stepsDisplay.textContent = stepCount;
       distanceDisplay.textContent = totalDistance.toFixed(2);
@@ -429,6 +544,9 @@
       if (positions.length > 0) {
         const alt = positions[positions.length-1].alt;
         elevationDisplay.textContent = alt !== null ? `🏔️ ${Math.round(alt)} m` : '🏔️ -- m';
+      }
+      if (!strideCalibrated) {
+        strideInfo.textContent = `👣 Stride: ${strideLengthM.toFixed(2)}m (uncalibrated)`;
       }
     }
 
@@ -446,7 +564,7 @@
       
       if (!navigator.geolocation) { alert('Geolocation not supported'); return; }
       
-      watchId = navigator.geolocation.watchPosition(processPosition, geoError, {
+      watchId = navigator.geolocation.watchPosition(processGPSPosition, geoError, {
         enableHighAccuracy: true, maximumAge: 5000, timeout: 10000
       });
       
@@ -455,7 +573,7 @@
       window.addEventListener('deviceorientation', handleOrientation, true);
       window.addEventListener('devicemotion', handleMotion);
       
-      statusMessage.textContent = '🧭 Live · arrow shows device heading';
+      statusMessage.textContent = '🧭 Live · cadence‑validated steps';
       startBtn.disabled = true;
       stopBtn.disabled = false;
     }
@@ -469,6 +587,7 @@
       statusMessage.textContent = '⏸️ Paused';
       startBtn.disabled = false;
       stopBtn.disabled = true;
+      deadReckoningActive = false;
     }
     
     function resetAll() {
@@ -479,11 +598,17 @@
       elevationGain = 0;
       lastAltitude = null;
       routePolyline.setLatLngs([]);
-      swingCheatCount = 0;
+      swingCheatCounter = 0;
       cheatWarning.textContent = '';
+      stepTimestamps = [];
+      deadReckoningActive = false;
+      lastGoodGPS = null;
+      strideLengthM = 0.75;
+      strideCalibrated = false;
       updateUI();
       elevationDisplay.textContent = '🏔️ -- m';
       updateHeadingDisplay(deviceHeading || 0);
+      strideInfo.textContent = `👣 Stride: 0.75m (calibrating...)`;
       statusMessage.textContent = '🔄 Reset · Press START';
     }
 
