@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>🏃 VungTauGO! - Ổn Định & Logic</title>
+  <title>🏃 VungTauGO! - Ổn Định & Logic (Hoàn thiện)</title>
   
   <!-- Leaflet CSS + JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -199,16 +199,24 @@
       border: 2px dashed #fbbf24;
       margin: 20px 0;
     }
-    .close-modal {
-      background: #ff6b00;
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .modal-btn {
+      background: #2d3748;
       border: none;
       color: white;
       padding: 14px;
-      width: 100%;
+      flex: 1;
       border-radius: 40px;
       font-weight: bold;
-      font-size: 18px;
+      font-size: 16px;
       cursor: pointer;
+    }
+    .modal-btn.primary {
+      background: #ff6b00;
     }
     .footnote {
       padding: 0 20px 15px;
@@ -247,7 +255,7 @@
   
   <div class="map-container">
     <div id="map"></div>
-    <div class="gps-status" id="gpsStatus">🛰️ Đang khởi tạo GPS...</div>
+    <div class="gps-status" id="gpsStatus">🛰️ Chưa khởi động GPS</div>
     <div class="fusion-badge" id="fusionBadge">⚖️ Chờ dữ liệu</div>
   </div>
   
@@ -270,7 +278,10 @@
     <p style="margin-bottom: 5px;">Bạn đã hoàn thành mục tiêu</p>
     <div class="voucher-code" id="voucherCode">VTGO-ABC123</div>
     <p style="margin-bottom: 20px;">Mã giảm giá đặc biệt cho bạn</p>
-    <button class="close-modal" id="closeModalBtn">TIẾP TỤC</button>
+    <div class="modal-buttons">
+      <button class="modal-btn" id="continueBtn">🏃 Chạy tiếp</button>
+      <button class="modal-btn primary" id="finishBtn">✅ Kết thúc</button>
+    </div>
   </div>
 </div>
 
@@ -278,31 +289,31 @@
   (function(){
     "use strict";
 
-    // ---------- CẤU HÌNH TỐI ƯU ----------
+    // ---------- CẤU HÌNH ----------
     const CONFIG = {
-      kalman: { Q: 0.001, R: 10, P: 1 },          // Tăng Q nhẹ để mô hình linh hoạt hơn
+      kalman: { Q: 0.001, R: 10, P: 1 },
       pedometer: {
-        minStepInterval: 280,                     // ms
-        maxStepFreq: 3.5,                         // bước/giây
-        threshold: 11.5,                          // m/s²
-        shakePenaltyThreshold: 18,                // ngưỡng lắc tay
-        maxShakeCount: 3,                         // số lần lắc trước khi trừ
-        defaultStepLength: 0.75,                  // mét (ước lượng ban đầu)
+        minStepInterval: 280,
+        maxStepFreq: 3.5,
+        threshold: 11.5,
+        shakePenaltyThreshold: 18,
+        maxShakeCount: 3,
+        defaultStepLength: 0.75,
         stepLengthMin: 0.5,
         stepLengthMax: 1.3,
-        calibrationSteps: 30                      // số bước để hiệu chỉnh lại bước
+        calibrationSteps: 30
       },
       gps: {
-        minDistance: 0.001,                       // km (1m)
-        maxSpeed: 2.5,                            // m/s (~9 km/h)
-        maxJumpDistance: 0.015,                   // km (15m)
-        goodAccuracy: 15,                         // mét
-        mediumAccuracy: 25,                       // mét
-        weakSignalThreshold: 30                   // mét
+        minDistance: 0.001,
+        maxSpeed: 2.5,
+        maxJumpDistance: 0.015,
+        goodAccuracy: 15,
+        mediumAccuracy: 25,
+        weakSignalThreshold: 30
       },
       drift: {
-        stationaryVariance: 0.8,                  // phương sai gia tốc dưới ngưỡng này coi là đứng yên
-        minMovementSpeed: 0.5                     // m/s - dưới tốc độ này + đứng yên => không cộng GPS
+        stationaryVariance: 0.8,
+        minMovementSpeed: 0.5
       }
     };
 
@@ -331,7 +342,7 @@
     let shakeCounter = 0;
     let stepTrust = true;
     
-    // Phát hiện chuyển động (chống drift)
+    // Phát hiện chuyển động
     let accHistory = [];
     let isMoving = false;
     
@@ -355,18 +366,21 @@
     const randomTargetBtn = document.getElementById('randomTargetBtn');
     const modalOverlay = document.getElementById('voucherModal');
     const voucherCodeEl = document.getElementById('voucherCode');
-    const closeModalBtn = document.getElementById('closeModalBtn');
+    const continueBtn = document.getElementById('continueBtn');
+    const finishBtn = document.getElementById('finishBtn');
 
     // ---------- RANDOM MỤC TIÊU ----------
     function generateRandomTarget() {
       const randomMeters = Math.floor(Math.random() * (300 - 50 + 1)) + 50;
       targetDistanceKm = randomMeters / 1000;
       targetDisplay.textContent = `🎲 ${randomMeters}m`;
-      return randomMeters;
     }
-    generateRandomTarget();
 
-    // ---------- KALMAN FILTER ----------
+    // ---------- KALMAN FILTER (Reset khi dừng) ----------
+    function resetKalman() {
+      kalman = { lat: null, lng: null, vLat: 0, vLng: 0, P: CONFIG.kalman.P };
+    }
+
     function kalmanUpdate(measuredLat, measuredLng, dt, accuracy) {
       if (kalman.lat === null) {
         kalman.lat = measuredLat;
@@ -374,7 +388,6 @@
         return { lat: measuredLat, lng: measuredLng };
       }
       
-      // Điều chỉnh R dựa trên accuracy: GPS càng chính xác thì R càng nhỏ (tin tưởng hơn)
       const R = Math.max(1, Math.min(30, accuracy)) * 0.4;
       const Q = CONFIG.kalman.Q * dt;
       
@@ -399,25 +412,28 @@
     function calibrateStepLength() {
       if (stepsSinceLastCalibration >= CONFIG.pedometer.calibrationSteps && gpsDistanceSinceLastCalibration > 0.005) {
         const rawStepLength = (gpsDistanceSinceLastCalibration * 1000) / stepsSinceLastCalibration;
-        // Giới hạn trong khoảng hợp lý
         const clamped = Math.min(CONFIG.pedometer.stepLengthMax, Math.max(CONFIG.pedometer.stepLengthMin, rawStepLength));
-        // Làm mịn (EMA)
         currentStepLength = currentStepLength * 0.6 + clamped * 0.4;
-        
-        // Reset bộ đếm
-        gpsDistanceSinceLastCalibration = 0;
-        stepsSinceLastCalibration = 0;
       }
     }
 
-    // ---------- PEDOMETER CHỐNG LẮC TAY & PHÁT HIỆN CHUYỂN ĐỘNG ----------
+    // ---------- PEDOMETER (cải tiến) ----------
     function initPedometer() {
-      if (!window.DeviceMotionEvent) return;
+      if (!window.DeviceMotionEvent) {
+        console.warn("Thiết bị không hỗ trợ cảm biến chuyển động.");
+        return;
+      }
       
       if (typeof DeviceMotionEvent.requestPermission === 'function') {
+        // iOS: chờ người dùng tương tác
         document.body.addEventListener('click', function iosPerm() {
           DeviceMotionEvent.requestPermission().then(perm => {
-            if (perm === 'granted') window.addEventListener('devicemotion', handleMotion);
+            if (perm === 'granted') {
+              window.addEventListener('devicemotion', handleMotion);
+              console.log("Đã cấp quyền cảm biến.");
+            } else {
+              alert("Ứng dụng cần quyền cảm biến để đếm bước chân. Vui lòng cấp quyền trong Cài đặt.");
+            }
           }).catch(console.error);
           document.body.removeEventListener('click', iosPerm);
         }, { once: true });
@@ -436,7 +452,7 @@
       const magnitude = Math.sqrt(x*x + y*y + z*z);
       const now = Date.now();
       
-      // Cập nhật lịch sử gia tốc để tính phương sai (phát hiện đứng yên)
+      // Phân tích chuyển động
       accHistory.push(magnitude);
       if (accHistory.length > 10) accHistory.shift();
       
@@ -462,7 +478,7 @@
         shakeCounter = Math.max(0, shakeCounter - 1);
       }
       
-      // Đếm bước
+      // Đếm bước hợp lệ
       if (magnitude > CONFIG.pedometer.threshold && (now - lastStepTime) > CONFIG.pedometer.minStepInterval) {
         const stepFreq = 1000 / (now - lastStepTime);
         if (stepFreq < CONFIG.pedometer.maxStepFreq) {
@@ -474,11 +490,14 @@
           stepTrustDisplay.style.color = '#4ade80';
           shakeCounter = 0;
           
-          // Nếu GPS không có tín hiệu > 3 giây, dùng bước để ước lượng quãng đường
+          // Nếu mất GPS > 3 giây, dùng bước để cộng quãng đường
           const timeSinceLastGps = lastGpsTimestamp ? Date.now() - lastGpsTimestamp : 9999;
           if (timeSinceLastGps > 3000 && isMoving) {
             const stepDistKm = currentStepLength / 1000;
             currentDistanceKm += stepDistKm;
+            // Reset bộ đếm sau khi dùng bước (để tránh cộng lại khi GPS quay lại)
+            stepsSinceLastCalibration = 0;
+            gpsDistanceSinceLastCalibration = 0;
             updateUI();
             if (currentDistanceKm >= targetDistanceKm) completeGoal();
           }
@@ -516,30 +535,28 @@
       if (pathPolyline) {
         pathPolyline.setLatLngs(pathCoordinates);
       } else {
-        pathPolyline = L.polyline(pathCoordinates, {color: '#007bff', weight: 6, opacity: 0.9, smoothFactor: 1.0}).addTo(map);
+        pathPolyline = L.polyline(pathCoordinates, {color: '#007bff', weight: 6, opacity: 0.9}).addTo(map);
       }
       
       let iconHtml = '<div style="background:#007bff; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow:0 0 10px #007bff;"></div>';
       if (userMarker) {
         userMarker.setLatLng([lat, lng]);
-        userMarker.setIcon(L.divIcon({className: 'custom-marker', html: iconHtml, iconSize:[20,20]}));
       } else {
         userMarker = L.marker([lat, lng], {icon: L.divIcon({className: 'custom-marker', html: iconHtml, iconSize:[20,20]})}).addTo(map);
       }
       map.setView([lat, lng], map.getZoom());
     }
     
-    // ---------- GPS VỚI LOGIC CÂN BẰNG ----------
+    // ---------- GPS XỬ LÝ (Đã sửa lỗi reset) ----------
     function handlePosition(position) {
       const { latitude, longitude, accuracy } = position.coords;
       const now = position.timestamp;
       lastGpsTimestamp = now;
       
-      // Cập nhật trạng thái
       if (accuracy > CONFIG.gps.weakSignalThreshold) {
         gpsStatusEl.innerHTML = `⚠️ GPS yếu (${Math.round(accuracy)}m)`;
         fusionBadge.innerHTML = '👟 Dùng bước chân';
-        return; // Không xử lý điểm GPS quá yếu
+        return;
       }
       
       gpsStatusEl.innerHTML = `🛰️ GPS ${Math.round(accuracy)}m`;
@@ -556,7 +573,7 @@
       }
       lastFusionTimestamp = now;
       
-      // Khởi tạo vị trí đầu tiên
+      // Khởi tạo vị trí đầu
       if (!lastValidPosition) {
         lastValidPosition = { lat: filteredLat, lng: filteredLng, timestamp: now };
         updatePath(filteredLat, filteredLng);
@@ -564,20 +581,16 @@
       }
       
       const dist = haversine(lastValidPosition.lat, lastValidPosition.lng, filteredLat, filteredLng);
-      const timeDiff = (now - lastValidPosition.timestamp) / 1000; // giây
+      const timeDiff = (now - lastValidPosition.timestamp) / 1000;
       let valid = true;
       let speed = 0;
       
       if (timeDiff > 0) {
-        speed = dist / timeDiff; // m/s
-        
-        // Kiểm tra nhảy bất thường
+        speed = dist / timeDiff;
         if (speed > CONFIG.gps.maxSpeed || dist > CONFIG.gps.maxJumpDistance) {
           valid = false;
           gpsStatusEl.innerHTML += ' 🚫 Nhảy vị trí';
         }
-        
-        // Chống drift: nếu đứng yên (không chuyển động) và tốc độ rất thấp => bỏ qua
         if (!isMoving && speed < CONFIG.drift.minMovementSpeed) {
           valid = false;
           fusionBadge.innerHTML = '🛑 Đứng yên';
@@ -586,38 +599,35 @@
       
       if (valid && isActive && !isPaused) {
         if (dist >= CONFIG.gps.minDistance) {
-          // --- QUYẾT ĐỊNH CÁCH CỘNG QUÃNG ĐƯỜNG DỰA TRÊN ĐỘ CHÍNH XÁC ---
           let addedDistance = 0;
           
           if (accuracy <= CONFIG.gps.goodAccuracy) {
-            // GPS tốt: tin tưởng hoàn toàn, dùng để hiệu chỉnh bước
             addedDistance = dist;
             gpsDistanceSinceLastCalibration += dist;
             fusionBadge.innerHTML = `🛰️ GPS | Bước: ${currentStepLength.toFixed(2)}m`;
-            calibrateStepLength(); // Hiệu chỉnh bước
+            calibrateStepLength();
           } else if (accuracy <= CONFIG.gps.mediumAccuracy) {
-            // GPS trung bình: kết hợp 50/50
             const stepDist = (stepsSinceLastCalibration * currentStepLength) / 1000;
             addedDistance = dist * 0.5 + stepDist * 0.5;
             gpsDistanceSinceLastCalibration += dist * 0.5;
             fusionBadge.innerHTML = `⚖️ Kết hợp | Bước: ${currentStepLength.toFixed(2)}m`;
             calibrateStepLength();
           } else {
-            // GPS yếu hơn nhưng vẫn dưới ngưỡng weak: dùng bước chân
+            // GPS yếu nhưng dưới ngưỡng weak: dùng bước chân
             addedDistance = (stepsSinceLastCalibration * currentStepLength) / 1000;
             fusionBadge.innerHTML = `👟 Bước chân | Bước: ${currentStepLength.toFixed(2)}m`;
+            // Không gọi calibrate vì không có GPS đủ tin cậy
           }
           
           currentDistanceKm += addedDistance;
           lastValidPosition = { lat: filteredLat, lng: filteredLng, timestamp: now };
           updatePath(filteredLat, filteredLng);
           
-          // Reset bộ đếm hiệu chỉnh sau khi đã cập nhật
+          // 🔥 QUAN TRỌNG: Reset bộ đếm sau mỗi lần cập nhật quãng đường (bất kể nhánh nào)
           stepsSinceLastCalibration = 0;
           gpsDistanceSinceLastCalibration = 0;
         }
       } else {
-        // Nếu không hợp lệ, vẫn cập nhật vị trí hiển thị nhưng không cộng quãng đường
         if (valid) {
           lastValidPosition = { lat: filteredLat, lng: filteredLng, timestamp: now };
           updatePath(filteredLat, filteredLng);
@@ -634,6 +644,7 @@
     }
     
     function startWatchingGPS() {
+      if (watchId !== null) return; // đã có watch
       if (!navigator.geolocation) {
         alert('Trình duyệt không hỗ trợ GPS');
         return;
@@ -643,11 +654,20 @@
         maximumAge: 0,
         timeout: 5000
       });
+      gpsStatusEl.innerHTML = '🛰️ Đang kết nối GPS...';
+    }
+    
+    function stopWatchingGPS() {
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+        gpsStatusEl.innerHTML = '🛰️ GPS đã tắt';
+      }
     }
     
     // ---------- ĐIỀU KHIỂN ----------
     function startActivity() {
-      if (!watchId) startWatchingGPS();
+      startWatchingGPS(); // bật GPS khi bắt đầu
       
       isActive = true;
       isPaused = false;
@@ -664,6 +684,7 @@
       startBtn.disabled = true;
       pauseBtn.disabled = false;
       stopBtn.disabled = false;
+      pauseBtn.innerHTML = '<i class="fas fa-pause"></i> TẠM DỪNG';
     }
     
     function pauseActivity() {
@@ -690,14 +711,15 @@
       pauseBtn.disabled = true;
       stopBtn.disabled = true;
       pauseBtn.innerHTML = '<i class="fas fa-pause"></i> TẠM DỪNG';
+      stopWatchingGPS(); // Tắt GPS khi dừng hẳn
     }
     
-    function resetSession() {
+    function resetSession(fullReset = true) {
       currentDistanceKm = 0;
       steps = 0;
       elapsedSeconds = 0;
       startTime = null;
-      kalman = { lat: null, lng: null, vLat: 0, vLng: 0, P: CONFIG.kalman.P };
+      resetKalman();
       lastGpsTimestamp = null;
       lastFusionTimestamp = null;
       lastValidPosition = null;
@@ -711,9 +733,13 @@
       isMoving = false;
       stepTrustDisplay.innerHTML = '✅ Hợp lệ';
       stepTrustDisplay.style.color = '#4ade80';
+      
+      // Reset bản đồ
       pathCoordinates = [];
       if (pathPolyline) map.removeLayer(pathPolyline);
       pathPolyline = null;
+      if (userMarker) map.removeLayer(userMarker);
+      userMarker = null;
       fusionBadge.innerHTML = '⚖️ Chờ dữ liệu';
       
       generateRandomTarget();
@@ -725,7 +751,7 @@
       isActive = false;
       isPaused = false;
       clearInterval(timerInterval);
-      startBtn.disabled = false;
+      startBtn.disabled = true;
       pauseBtn.disabled = true;
       stopBtn.disabled = true;
       
@@ -746,11 +772,14 @@
       L.control.attribution({position: 'bottomleft'}).addTo(map);
       L.control.zoom({position: 'bottomright'}).addTo(map);
       
+      // Lấy vị trí ban đầu để hiển thị
       navigator.geolocation.getCurrentPosition((pos) => {
         map.setView([pos.coords.latitude, pos.coords.longitude], 18);
         updatePath(pos.coords.latitude, pos.coords.longitude);
-        gpsStatusEl.innerHTML = '📍 Sẵn sàng';
-      }, ()=>{}, {enableHighAccuracy: true});
+        gpsStatusEl.innerHTML = '📍 Sẵn sàng (GPS chưa bật)';
+      }, () => {
+        gpsStatusEl.innerHTML = '📍 Không thể lấy vị trí';
+      }, { enableHighAccuracy: true, timeout: 5000 });
     }
     
     // ---------- EVENT LISTENERS ----------
@@ -760,7 +789,7 @@
     
     startBtn.addEventListener('click', () => {
       if (!isActive) {
-        if (currentDistanceKm === 0) resetSession();
+        if (currentDistanceKm === 0 && steps === 0) resetSession();
         startActivity();
       }
     });
@@ -768,20 +797,37 @@
     pauseBtn.addEventListener('click', pauseActivity);
     stopBtn.addEventListener('click', stopActivity);
     
-    closeModalBtn.addEventListener('click', () => {
+    // Modal: "Chạy tiếp" (tiếp tục chạy với mục tiêu mới hoặc mục tiêu cũ)
+    continueBtn.addEventListener('click', () => {
       modalOverlay.style.visibility = 'hidden';
+      // Giữ nguyên trạng thái, chỉ tạo mục tiêu mới
+      generateRandomTarget();
+      // Kích hoạt lại hoạt động (nếu đã dừng)
+      if (!isActive) {
+        startActivity();
+      }
+    });
+    
+    finishBtn.addEventListener('click', () => {
+      modalOverlay.style.visibility = 'hidden';
+      stopActivity();
       resetSession();
     });
     
     modalOverlay.addEventListener('click', (e) => {
-      if (e.target === modalOverlay) modalOverlay.style.visibility = 'hidden';
+      if (e.target === modalOverlay) {
+        modalOverlay.style.visibility = 'hidden';
+        stopActivity();
+        resetSession();
+      }
     });
     
     // Khởi động
     initMap();
-    startWatchingGPS();
     initPedometer();
+    generateRandomTarget();
     updateUI();
+    // Không gọi startWatchingGPS() ở đây nữa
   })();
 </script>
 </body>
