@@ -3,204 +3,148 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>🌍 Trail Tracker · Steps · Elevation · Map</title>
-  <!-- Leaflet (lightweight maps) -->
+  <title>🏔️ Trail Tracker Pro · Steps · Elevation · Map</title>
+  <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-      background: #0b1a1f;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #0b1f1a;
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100dvh;
       margin: 0;
-      padding: 8px;
+      padding: 6px;
     }
-
     .app-container {
-      max-width: 500px;
+      max-width: 520px;
       width: 100%;
-      background: #13262b;
-      border-radius: 32px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 0 2px #2e4c3e inset;
-      overflow: hidden;
-      backdrop-filter: blur(2px);
-      color: #e6f7f0;
+      background: #142e28;
+      border-radius: 36px;
+      box-shadow: 0 20px 30px rgba(0,0,0,0.7), inset 0 0 0 2px #2d5a4b;
+      color: #e2f3e9;
       display: flex;
       flex-direction: column;
-      height: 95dvh;
-      max-height: 850px;
+      height: 96dvh;
+      max-height: 880px;
+      overflow: hidden;
     }
-
     .header {
-      padding: 18px 20px 10px;
+      padding: 18px 18px 8px;
       text-align: center;
-      border-bottom: 1px solid #2e5a4b;
+      border-bottom: 1px solid #2e6b58;
     }
-
     .header h1 {
       font-weight: 600;
-      font-size: 1.7rem;
-      letter-spacing: 1px;
+      font-size: 1.6rem;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
+      gap: 8px;
     }
-
-    .header h1 i {
-      font-size: 1.8rem;
-    }
-
     .map-wrapper {
-      flex: 2;
+      flex: 2.2;
       min-height: 200px;
-      background: #1e3a2f;
+      background: #1c4237;
       margin: 10px 12px;
       border-radius: 24px;
       overflow: hidden;
-      border: 2px solid #3b6b58;
-      box-shadow: inset 0 0 0 1px #1f3d31, 0 6px 0 #0c1a14;
+      border: 2px solid #3e826b;
+      box-shadow: inset 0 0 0 1px #1f4d3d, 0 6px 0 #0d261e;
     }
-
-    #map {
-      width: 100%;
-      height: 100%;
-      background: #aad6c7;
-      z-index: 1;
-    }
-
-    /* Stats panel */
-    .stats-panel {
+    #map { width: 100%; height: 100%; background: #b1d9cb; }
+    .stats-grid {
       display: flex;
-      justify-content: space-around;
-      padding: 12px 8px;
-      background: #1a3a30;
+      justify-content: space-evenly;
+      padding: 10px 6px;
+      background: #1a4136;
       margin: 0 12px 10px;
-      border-radius: 60px;
-      border: 1px solid #3b7a64;
-      box-shadow: inset 0 2px 3px #0e231c, 0 4px 0 #0b1e17;
+      border-radius: 48px;
+      border: 1px solid #438b74;
+      box-shadow: inset 0 2px 4px #0e2b21, 0 4px 0 #0a1f18;
     }
-
-    .stat-card {
+    .stat-cell {
       text-align: center;
       flex: 1;
     }
-
     .stat-label {
       font-size: 0.7rem;
       text-transform: uppercase;
       letter-spacing: 2px;
-      color: #9dc6b3;
+      color: #a5d4c1;
       font-weight: 500;
     }
-
     .stat-value {
-      font-size: 2rem;
+      font-size: 2.1rem;
       font-weight: 800;
-      line-height: 1.2;
-      color: #f2ffe6;
-      text-shadow: 0 2px 3px #0a1f16;
+      line-height: 1.1;
+      color: #fbfff0;
+      text-shadow: 0 2px 5px #0b241c;
     }
-
-    .stat-unit {
-      font-size: 0.8rem;
-      color: #b1dfcf;
-      margin-left: 3px;
-    }
-
-    .elevation-row {
+    .unit { font-size: 0.8rem; color: #bbe6d6; margin-left: 2px; }
+    .direction-row {
       display: flex;
       justify-content: space-between;
-      padding: 0 16px 8px;
+      align-items: center;
+      padding: 4px 16px 8px;
     }
-
-    .elev-badge {
-      background: #1f4539;
-      padding: 8px 16px;
-      border-radius: 30px;
-      display: inline-block;
-      border: 1px solid #4d9f83;
+    .compass-badge {
+      background: #1f4a3b;
+      padding: 6px 18px;
+      border-radius: 40px;
+      border: 1px solid #5ea58c;
       font-weight: 600;
-      font-size: 1rem;
+      font-size: 1.1rem;
     }
-
+    .elev-badge {
+      background: #1f4a3b;
+      padding: 6px 18px;
+      border-radius: 40px;
+      border: 1px solid #5ea58c;
+      font-weight: 600;
+      font-size: 1.1rem;
+    }
+    .status-area {
+      display: flex;
+      justify-content: space-between;
+      padding: 0 18px 6px;
+      font-size: 0.8rem;
+      color: #b0decb;
+    }
     .controls {
       display: flex;
-      gap: 12px;
-      padding: 8px 12px 20px;
+      gap: 10px;
+      padding: 10px 14px 20px;
       justify-content: center;
-      flex-wrap: wrap;
     }
-
     .btn {
-      background: #2a5e4c;
+      background: #266b53;
       border: none;
-      border-bottom: 4px solid #0e2b21;
+      border-bottom: 4px solid #0c2b20;
       color: white;
       font-weight: bold;
       font-size: 1.2rem;
-      padding: 14px 24px;
-      min-width: 120px;
+      padding: 12px 18px;
+      min-width: 100px;
       border-radius: 50px;
       cursor: pointer;
-      box-shadow: 0 6px 0 #0b1e17, 0 2px 8px rgba(0,0,0,0.3);
-      transition: all 0.08s;
+      box-shadow: 0 5px 0 #0a1e16, 0 2px 8px black;
+      transition: 0.08s;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      flex: 1 1 0;
+      letter-spacing: 1.2px;
+      flex: 1;
     }
-
-    .btn:active {
-      transform: translateY(3px);
-      box-shadow: 0 3px 0 #0b1e17, 0 2px 6px black;
-    }
-
-    .btn:disabled {
-      opacity: 0.5;
-      transform: none;
-      box-shadow: 0 4px 0 #0b1e17;
-      pointer-events: none;
-      filter: grayscale(0.5);
-    }
-
-    .btn.stop {
-      background: #5e3a3a;
-      border-bottom-color: #2e1c1c;
-    }
-
-    .btn.reset {
-      background: #3e4e5e;
-      border-bottom-color: #1f2a33;
-    }
-
-    .permission-hint {
+    .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #0a1e16, 0 2px 6px black; }
+    .btn:disabled { opacity: 0.5; transform: none; box-shadow: 0 4px 0 #0a1e16; pointer-events: none; }
+    .btn.stop { background: #6b4e4e; border-bottom-color: #2e2121; }
+    .btn.reset { background: #3f556b; border-bottom-color: #1f2b3a; }
+    .warning-tag {
+      color: #fcd34d;
       font-size: 0.75rem;
-      padding: 0 20px 10px;
-      color: #8eb7a8;
-      text-align: center;
-    }
-
-    .leaflet-control-attribution {
-      font-size: 8px;
-      background: rgba(20, 40, 30, 0.7);
-      color: #ccc;
-    }
-
-    /* status strip */
-    .status {
-      text-align: center;
-      font-size: 0.8rem;
-      color: #b6dfcf;
-      padding: 0 0 5px;
+      margin-left: 8px;
     }
   </style>
 </head>
@@ -208,400 +152,396 @@
 <div class="app-container">
   <div class="header">
     <h1>
-      <span>🗺️ TRAIL</span>
+      <span>🗺️ TRAIL PRO</span>
       <span style="font-weight:300;">·</span>
       <span>👣 STEP</span>
     </h1>
   </div>
-
-  <!-- Map container -->
   <div class="map-wrapper">
     <div id="map"></div>
   </div>
-
-  <!-- Live stats: steps, distance -->
-  <div class="stats-panel">
-    <div class="stat-card">
+  <!-- Steps & Distance -->
+  <div class="stats-grid">
+    <div class="stat-cell">
       <div class="stat-label">👟 STEPS</div>
       <div class="stat-value" id="stepsDisplay">0</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">📏 DISTANCE</div>
-      <div class="stat-value"><span id="distanceDisplay">0.00</span><span class="stat-unit">km</span></div>
+    <div class="stat-cell">
+      <div class="stat-label">📏 DIST</div>
+      <div class="stat-value"><span id="distanceDisplay">0.00</span><span class="unit">km</span></div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-label">⬆️ GAIN</div>
+      <div class="stat-value"><span id="gainDisplay">0</span><span class="unit">m</span></div>
     </div>
   </div>
-
-  <!-- Elevation row -->
-  <div class="elevation-row">
-    <div class="elev-badge">⬆️ ELEV <span id="elevationDisplay">--</span> m</div>
-    <div class="elev-badge">📈 GAIN <span id="gainDisplay">0</span> m</div>
+  <!-- Direction & Elevation -->
+  <div class="direction-row">
+    <div class="compass-badge" id="directionDisplay">🧭 N 0°</div>
+    <div class="elev-badge" id="elevationDisplay">🏔️ -- m</div>
   </div>
-
-  <div class="status" id="statusMessage">📍 Press START · allow location & motion</div>
-
-  <!-- Buttons -->
+  <div class="status-area">
+    <span id="statusMessage">📍 Press START — allow motion & GPS</span>
+    <span id="cheatWarning" class="warning-tag"></span>
+  </div>
   <div class="controls">
     <button class="btn" id="startBtn">▶ START</button>
     <button class="btn stop" id="stopBtn" disabled>⏹ STOP</button>
     <button class="btn reset" id="resetBtn">🔄 RESET</button>
   </div>
-  <div class="permission-hint">
-    ⚡ Steps use motion sensors · keep phone in pocket or hand. Elevation from GPS.
+  <div style="font-size:0.7rem; padding:0 16px 12px; color:#7daf9b;">
+    ⚡ Steps via accelerometer · anti‑swing · heading shows movement direction
   </div>
 </div>
 
 <script>
-  (function(){
-    "use strict";
-
-    // ---------- DOM elements ----------
+  (() => {
+    // ----- DOM elements -----
     const mapEl = document.getElementById('map');
     const stepsDisplay = document.getElementById('stepsDisplay');
     const distanceDisplay = document.getElementById('distanceDisplay');
-    const elevationDisplay = document.getElementById('elevationDisplay');
     const gainDisplay = document.getElementById('gainDisplay');
+    const elevationDisplay = document.getElementById('elevationDisplay');
+    const directionDisplay = document.getElementById('directionDisplay');
     const statusMessage = document.getElementById('statusMessage');
+    const cheatWarning = document.getElementById('cheatWarning');
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
     const resetBtn = document.getElementById('resetBtn');
 
-    // ---------- State ----------
-    let map;                       // Leaflet map
-    let routePolyline;            // Leaflet polyline
-    let currentMarker;            // Current position marker
-    let watchId = null;           // Geolocation watch ID
-    let stepListenerActive = false;
+    // ----- Map & tracking -----
+    let map;
+    let routePolyline;
+    let currentMarker;
+    let headingMarker; // direction arrow
+    let watchId = null;
+    let trackingActive = false;
     
-    // Tracking data
-    let positions = [];            // Array of {lat, lng, alt, timestamp}
-    let totalDistance = 0;         // in kilometers
+    // Data
+    let positions = [];           // {lat, lng, alt, timestamp}
+    let totalDistance = 0;
+    let elevationGain = 0;
+    let lastAltitude = null;
     let stepCount = 0;
-    let elevationGain = 0;         // cumulative positive gain (meters)
-    let lastAltitude = null;       // for gain calculation
     
-    // Step detection (motion)
-    let stepDetectionEnabled = false;
-    let lastStepTime = 0;
-    const STEP_TIME_MIN = 280;      // ms between steps (max ~214 steps/min)
-    let accelWindow = [];
-    let stepThreshold = 1.15;       // g-force magnitude threshold (adjustable)
-    let lastMagnitude = 0;
+    // Heading / direction
+    let currentHeading = 0;       // 0-360 degrees (true north from deviceorientation)
+    let compassHeading = 0;
+    let lastMovementHeading = 0;  // derived from GPS movement
+    
+    // ----- Step detection (advanced anti-cheat) -----
+    let stepDetectionActive = false;
+    let accelBuffer = [];          // circular buffer for filtered values
+    const BUFFER_SIZE = 15;
+    // Filter coefficients
+    const ALPHA = 0.15;           // low-pass filter for gravity estimation
+    let gravityX = 0, gravityY = 0, gravityZ = 0;
+    // Step detection state
+    let stepLastTimestamp = 0;
+    const MIN_STEP_INTERVAL = 280; // ms
+    const MAX_STEP_INTERVAL = 1200;
+    let stepDynamicThreshold = 0.8; // base threshold (m/s²) will adapt
+    let lastPeakValue = 0;
+    let lastPeakTime = 0;
     let stepLock = false;
-
-    // Map defaults
-    const defaultCenter = [39.5, -98.0];  // geographic center US, will jump to user
-    const defaultZoom = 13;
-
-    // ---------- Initialize Map ----------
+    let possibleCheatCount = 0;
+    const CHEAT_RESET_THRESHOLD = 6; // if too many rapid swings, reset steps
+    
+    // ----- Initialize Map -----
     function initMap() {
-      map = L.map('map', {
-        attributionControl: true,
-        zoomControl: true,
-        preferCanvas: true,
-      }).setView(defaultCenter, defaultZoom);
-      
+      map = L.map('map', { attributionControl: true, zoomControl: true }).setView([39.5, -98.0], 13);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        maxZoom: 19,
+        attribution: '© OpenStreetMap', maxZoom: 19
       }).addTo(map);
       
-      // Initialize polyline (empty)
-      routePolyline = L.polyline([], {
-        color: '#ffd966',
-        weight: 6,
-        opacity: 0.9,
-        lineCap: 'round',
-        lineJoin: 'round',
-        smoothFactor: 1.5
-      }).addTo(map);
+      routePolyline = L.polyline([], { color: '#f5c542', weight: 6, opacity: 0.9 }).addTo(map);
       
-      // Marker for current location (will be updated)
-      currentMarker = L.marker(defaultCenter, {
+      // Current position marker
+      currentMarker = L.marker([0,0], {
         icon: L.divIcon({
-          className: 'current-location-icon',
-          html: '<div style="background: #3b9eff; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px #1e90ff, 0 2px 4px black;"></div>',
-          iconSize: [22, 22],
-          iconAnchor: [11, 11]
+          className: 'pos-marker',
+          html: '<div style="background:#2a9df4; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow:0 0 10px #1e90ff;"></div>',
+          iconSize: [22,22], iconAnchor: [11,11]
+        })
+      }).addTo(map);
+      
+      // Direction arrow marker (rotated via CSS)
+      headingMarker = L.marker([0,0], {
+        icon: L.divIcon({
+          className: 'heading-arrow',
+          html: '<div id="arrowDiv" style="width:0; height:0; border-left:10px solid transparent; border-right:10px solid transparent; border-bottom:22px solid #ffb347; transform-origin:50% 100%; filter:drop-shadow(0 2px 3px black);"></div>',
+          iconSize: [24, 30], iconAnchor: [12, 28]
         })
       }).addTo(map);
     }
-
-    // ---------- Update UI stats ----------
-    function updateUI() {
-      stepsDisplay.textContent = stepCount;
-      distanceDisplay.textContent = totalDistance.toFixed(2);
-      
-      if (positions.length > 0) {
-        const lastPos = positions[positions.length-1];
-        if (lastPos.alt !== null && lastPos.alt !== undefined) {
-          elevationDisplay.textContent = Math.round(lastPos.alt);
-        } else {
-          elevationDisplay.textContent = '--';
-        }
-      } else {
-        elevationDisplay.textContent = '--';
-      }
-      gainDisplay.textContent = Math.round(elevationGain);
+    
+    // Update arrow rotation
+    function updateHeadingOnMap(headingDeg) {
+      const arrow = document.getElementById('arrowDiv');
+      if (arrow) arrow.style.transform = `rotate(${headingDeg}deg)`;
+    }
+    
+    // Direction from deviceorientation (compass) or GPS movement
+    function updateDirectionDisplay(heading) {
+      const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+      const idx = Math.round(heading / 45) % 8;
+      directionDisplay.textContent = `🧭 ${directions[idx]} ${Math.round(heading)}°`;
     }
 
-    // ---------- Haversine distance (km) ----------
+    // ----- Geospatial helpers -----
     function haversine(lat1, lon1, lat2, lon2) {
-      const R = 6371; // Earth radius km
-      const dLat = (lat2 - lat1) * Math.PI / 180;
-      const dLon = (lon2 - lon1) * Math.PI / 180;
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
-                Math.sin(dLon/2) * Math.sin(dLon/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return R * c;
+      const R = 6371;
+      const dLat = (lat2-lat1)*Math.PI/180;
+      const dLon = (lon2-lon1)*Math.PI/180;
+      const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+    
+    function bearing(lat1, lon1, lat2, lon2) {
+      const φ1 = lat1 * Math.PI/180, φ2 = lat2 * Math.PI/180;
+      const Δλ = (lon2-lon1) * Math.PI/180;
+      const y = Math.sin(Δλ) * Math.cos(φ2);
+      const x = Math.cos(φ1)*Math.sin(φ2) - Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ);
+      const θ = Math.atan2(y, x);
+      return (θ*180/Math.PI + 360) % 360;
     }
 
-    // ---------- Process new position ----------
-    function processNewPosition(pos) {
+    // ----- Process GPS position -----
+    function processPosition(pos) {
       const crd = pos.coords;
-      const lat = crd.latitude;
-      const lng = crd.longitude;
+      const lat = crd.latitude, lng = crd.longitude;
       const alt = (crd.altitude !== null && crd.altitude !== undefined) ? crd.altitude : null;
-      const timestamp = pos.timestamp || Date.now();
+      const ts = pos.timestamp || Date.now();
       
-      // Update map view & marker
+      // Update map view & markers
       map.setView([lat, lng], map.getZoom());
       currentMarker.setLatLng([lat, lng]);
+      headingMarker.setLatLng([lat, lng]);
       
-      // Add to route polyline
+      // Add to polyline
       routePolyline.addLatLng([lat, lng]);
       
-      // Distance calculation
+      // Distance & elevation gain
       if (positions.length > 0) {
         const prev = positions[positions.length-1];
-        const segmentDist = haversine(prev.lat, prev.lng, lat, lng);
-        if (segmentDist > 0.001) { // filter tiny jumps
-          totalDistance += segmentDist;
+        const segDist = haversine(prev.lat, prev.lng, lat, lng);
+        if (segDist > 0.002) {
+          totalDistance += segDist;
+          // Compute movement heading from GPS (more reliable for direction)
+          const moveHeading = bearing(prev.lat, prev.lng, lat, lng);
+          lastMovementHeading = moveHeading;
+          updateHeadingOnMap(moveHeading);
+          updateDirectionDisplay(moveHeading);
         }
-        
-        // Elevation gain (only positive)
         if (lastAltitude !== null && alt !== null) {
           const diff = alt - lastAltitude;
-          if (diff > 0.5 && diff < 50) {  // reasonable climb per update
-            elevationGain += diff;
-          }
+          if (diff > 0.3 && diff < 60) elevationGain += diff;
         }
       } else {
-        // first point: set lastAltitude
+        // first point: use compass if available
+        if (compassHeading) updateHeadingOnMap(compassHeading);
       }
       
-      // Store position
-      positions.push({ lat, lng, alt, timestamp });
+      positions.push({ lat, lng, alt, timestamp: ts });
       if (alt !== null) lastAltitude = alt;
       
       updateUI();
+      statusMessage.textContent = '📍 Live tracking';
     }
-
-    // ---------- Geolocation success callback ----------
-    function geoSuccess(position) {
-      processNewPosition(position);
-      statusMessage.textContent = '✅ Tracking · route live';
-    }
-
+    
     function geoError(err) {
-      console.warn('Geolocation error:', err);
-      let msg = '📍 GPS error';
-      if (err.code === 1) msg = '❌ Location permission denied';
-      else if (err.code === 2) msg = '❌ Position unavailable';
-      else if (err.code === 3) msg = '❌ Timeout';
+      let msg = 'GPS weak';
+      if (err.code === 1) msg = '📍 Location denied';
+      else if (err.code === 2) msg = '📍 Signal unavailable';
       statusMessage.textContent = msg;
     }
 
-    // ---------- Start tracking (GPS + steps) ----------
-    function startTracking() {
-      if (watchId !== null) return;
+    // ----- Step detection (advanced, anti-swing) -----
+    function initStepDetection() {
+      window.addEventListener('devicemotion', handleMotion);
+    }
+    
+    function handleMotion(event) {
+      if (!stepDetectionActive || !trackingActive) return;
       
-      // Reset status
-      statusMessage.textContent = '🔄 Requesting GPS & motion...';
+      const acc = event.accelerationIncludingGravity;
+      if (!acc) return;
+      const { x, y, z } = acc;
       
-      // Geolocation options
-      const options = {
-        enableHighAccuracy: true,
-        maximumAge: 5000,
-        timeout: 15000
-      };
+      // Low-pass filter to isolate gravity
+      gravityX = ALPHA * x + (1 - ALPHA) * gravityX;
+      gravityY = ALPHA * y + (1 - ALPHA) * gravityY;
+      gravityZ = ALPHA * z + (1 - ALPHA) * gravityZ;
       
-      // Clear old watch if any
-      if (watchId) navigator.geolocation.clearWatch(watchId);
+      // Linear acceleration (dynamic part)
+      const linX = x - gravityX;
+      const linY = y - gravityY;
+      const linZ = z - gravityZ;
       
-      // Start geolocation watch
-      watchId = navigator.geolocation.watchPosition(geoSuccess, geoError, options);
+      // Use vertical component approx: we assume device roughly upright. 
+      // Better: use magnitude of linear accel, but we want vertical movement.
+      // We'll use the norm of linear acceleration.
+      const mag = Math.sqrt(linX*linX + linY*linY + linZ*linZ);
       
-      // Enable step detection
-      enableStepCounter();
+      // Add to buffer for smoothing
+      accelBuffer.push(mag);
+      if (accelBuffer.length > BUFFER_SIZE) accelBuffer.shift();
       
+      // Compute smoothed value (moving average)
+      const smoothed = accelBuffer.reduce((a,b) => a+b, 0) / accelBuffer.length;
+      
+      const now = Date.now();
+      
+      // Adaptive threshold (based on recent peaks)
+      if (smoothed > stepDynamicThreshold && !stepLock) {
+        const timeSinceLast = now - lastPeakTime;
+        
+        // Anti-cheat: if too many fast swings (< 200ms) increment cheat counter
+        if (timeSinceLast < 200) {
+          possibleCheatCount++;
+          cheatWarning.textContent = `⚠️ swing detected (${possibleCheatCount}/${CHEAT_RESET_THRESHOLD})`;
+          if (possibleCheatCount >= CHEAT_RESET_THRESHOLD) {
+            // Reset steps due to cheating
+            stepCount = 0;
+            possibleCheatCount = 0;
+            cheatWarning.textContent = '❌ Steps reset (cheating)';
+            updateUI();
+            setTimeout(() => cheatWarning.textContent = '', 2000);
+          }
+          stepLock = true;
+          setTimeout(() => stepLock = false, 250);
+          return;
+        } else {
+          // legitimate step condition
+          if (timeSinceLast > MIN_STEP_INTERVAL && timeSinceLast < MAX_STEP_INTERVAL) {
+            stepCount++;
+            lastPeakTime = now;
+            lastPeakValue = smoothed;
+            // Slowly adapt threshold
+            stepDynamicThreshold = 0.7 * stepDynamicThreshold + 0.3 * (smoothed * 0.55);
+            // Reset cheat count on valid step
+            possibleCheatCount = Math.max(0, possibleCheatCount-1);
+            cheatWarning.textContent = '';
+            updateUI();
+          } else if (timeSinceLast >= MAX_STEP_INTERVAL) {
+            // long pause, still consider step but adjust
+            stepCount++;
+            lastPeakTime = now;
+            lastPeakValue = smoothed;
+            possibleCheatCount = Math.max(0, possibleCheatCount-1);
+            updateUI();
+          }
+          stepLock = true;
+          setTimeout(() => stepLock = false, 220);
+        }
+      }
+      
+      // If no movement for a while, reset cheat counter slowly
+      if (now - lastPeakTime > 3000) possibleCheatCount = 0;
+    }
+    
+    // Device orientation for compass heading (when not moving)
+    function handleOrientation(event) {
+      if (!trackingActive) return;
+      let heading;
+      if (event.webkitCompassHeading) heading = event.webkitCompassHeading;
+      else if (event.absolute && event.alpha !== null) heading = 360 - event.alpha; // alpha is compass
+      else return;
+      
+      compassHeading = heading;
+      // Only update direction if we haven't moved recently (use GPS heading when moving)
+      if (positions.length === 0 || (Date.now() - positions[positions.length-1].timestamp > 5000)) {
+        updateHeadingOnMap(heading);
+        updateDirectionDisplay(heading);
+      }
+    }
+
+    // ----- UI update -----
+    function updateUI() {
+      stepsDisplay.textContent = stepCount;
+      distanceDisplay.textContent = totalDistance.toFixed(2);
+      gainDisplay.textContent = Math.round(elevationGain);
+      if (positions.length > 0) {
+        const alt = positions[positions.length-1].alt;
+        elevationDisplay.textContent = alt !== null ? `🏔️ ${Math.round(alt)} m` : '🏔️ -- m';
+      }
+    }
+
+    // ----- Tracking control -----
+    async function startTracking() {
+      if (trackingActive) return;
+      
+      // Request motion/orientation permissions (iOS)
+      if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+        try {
+          await DeviceMotionEvent.requestPermission();
+        } catch(e) { /* ignore */ }
+      }
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        try {
+          await DeviceOrientationEvent.requestPermission();
+        } catch(e) {}
+      }
+      
+      // Geolocation
+      if (!navigator.geolocation) { alert('Geolocation not supported'); return; }
+      
+      watchId = navigator.geolocation.watchPosition(processPosition, geoError, {
+        enableHighAccuracy: true, maximumAge: 8000, timeout: 12000
+      });
+      
+      trackingActive = true;
+      stepDetectionActive = true;
+      window.addEventListener('deviceorientation', handleOrientation, true);
+      statusMessage.textContent = '👣 Tracking · Steps & GPS active';
       startBtn.disabled = true;
       stopBtn.disabled = false;
-      statusMessage.textContent = '📍 Live · moving?';
     }
-
-    // ---------- Stop tracking ----------
+    
     function stopTracking() {
-      if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
-        watchId = null;
-      }
-      disableStepCounter();
-      
+      if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+      trackingActive = false;
+      stepDetectionActive = false;
+      window.removeEventListener('deviceorientation', handleOrientation);
+      statusMessage.textContent = '⏸️ Paused';
       startBtn.disabled = false;
       stopBtn.disabled = true;
-      statusMessage.textContent = '⏸️ Tracking paused';
     }
-
-    // ---------- Reset everything ----------
+    
     function resetAll() {
-      // Stop first
       stopTracking();
-      
-      // Clear data
       positions = [];
       totalDistance = 0;
       stepCount = 0;
       elevationGain = 0;
       lastAltitude = null;
-      
-      // Clear map layers
       routePolyline.setLatLngs([]);
-      // keep marker but move to default? Let's keep where it is or reset view later
-      if (positions.length === 0) {
-        // If no positions, maybe keep map view, but marker can stay
-      }
-      
-      // Reset step counter internal state
-      lastStepTime = 0;
-      accelWindow = [];
-      lastMagnitude = 0;
-      stepLock = false;
-      
+      possibleCheatCount = 0;
+      cheatWarning.textContent = '';
+      // Reset step detector state
+      accelBuffer = [];
+      stepLastTimestamp = 0; lastPeakTime = 0;
       updateUI();
+      elevationDisplay.textContent = '🏔️ -- m';
+      directionDisplay.textContent = '🧭 N 0°';
       statusMessage.textContent = '🔄 Reset · Press START';
-      
-      // optional: re-center map to default? but let user see last area.
     }
 
-    // ---------- STEP DETECTION (DeviceMotion) ----------
-    function handleMotionEvent(event) {
-      if (!stepDetectionEnabled) return;
-      
-      const acc = event.accelerationIncludingGravity;
-      if (!acc) return;
-      
-      const x = acc.x || 0;
-      const y = acc.y || 0;
-      const z = acc.z || 0;
-      
-      const magnitude = Math.sqrt(x*x + y*y + z*z);
-      
-      // Simple low-pass filter for smoothing
-      if (accelWindow.length > 0) {
-        const last = accelWindow[accelWindow.length-1];
-        // weighted average (low pass)
-        const filtered = last * 0.7 + magnitude * 0.3;
-        accelWindow.push(filtered);
-      } else {
-        accelWindow.push(magnitude);
-      }
-      if (accelWindow.length > 10) accelWindow.shift();
-      
-      const currentMag = accelWindow[accelWindow.length-1];
-      
-      // Detect peak: crossing threshold
-      const now = Date.now();
-      if (!stepLock && currentMag > stepThreshold && lastMagnitude <= stepThreshold) {
-        // potential step, check time since last step
-        if (now - lastStepTime > STEP_TIME_MIN) {
-          stepCount++;
-          lastStepTime = now;
-          stepLock = true;
-          updateUI();
-          // brief lock to avoid double count
-          setTimeout(() => { stepLock = false; }, 200);
-        }
-      }
-      
-      lastMagnitude = currentMag;
-    }
-
-    function enableStepCounter() {
-      if (stepListenerActive) return;
-      
-      // Request permission for DeviceMotionEvent (iOS)
-      if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-        DeviceMotionEvent.requestPermission()
-          .then(permissionState => {
-            if (permissionState === 'granted') {
-              window.addEventListener('devicemotion', handleMotionEvent);
-              stepListenerActive = true;
-              stepDetectionEnabled = true;
-              statusMessage.textContent = '👣 Steps active + GPS';
-            } else {
-              statusMessage.textContent = '⚠️ Motion denied · steps disabled';
-              stepDetectionEnabled = false;
-            }
-          })
-          .catch(console.error);
-      } else {
-        // Standard browsers
-        window.addEventListener('devicemotion', handleMotionEvent);
-        stepListenerActive = true;
-        stepDetectionEnabled = true;
-        statusMessage.textContent = '👣 Step sensor on';
-      }
-    }
-
-    function disableStepCounter() {
-      if (stepListenerActive) {
-        window.removeEventListener('devicemotion', handleMotionEvent);
-        stepListenerActive = false;
-      }
-      stepDetectionEnabled = false;
-    }
-
-    // ---------- Event listeners ----------
-    startBtn.addEventListener('click', () => {
-      // Request permissions and start
-      if (!navigator.geolocation) {
-        alert('Geolocation not supported');
-        return;
-      }
-      startTracking();
-    });
-    
-    stopBtn.addEventListener('click', stopTracking);
-    
-    resetBtn.addEventListener('click', () => {
-      resetAll();
-      // also optional clear map view to user location? we can keep as is.
-      if (positions.length === 0) {
-        // nothing
-      }
-    });
-
-    // ---------- Initialize everything ----------
+    // ----- Init -----
     initMap();
+    initStepDetection();
     updateUI();
-    statusMessage.textContent = '📍 Press START · allow location & motion';
     
-    // Handle page visibility / background: no special handling, but keep simple.
-    // Cleanup on page unload
+    startBtn.addEventListener('click', startTracking);
+    stopBtn.addEventListener('click', stopTracking);
+    resetBtn.addEventListener('click', resetAll);
+    
+    // Cleanup
     window.addEventListener('beforeunload', () => {
       if (watchId) navigator.geolocation.clearWatch(watchId);
-      disableStepCounter();
+      window.removeEventListener('devicemotion', handleMotion);
+      window.removeEventListener('deviceorientation', handleOrientation);
     });
-
-    // Additional: if user clicks reset, we may also want to reset step lock
-    // extra: detect if altitude is null, show N/A.
-    
-    // We also want to set initial view if positions come later, fine.
-    // Minor improvement: if GPS accuracy changes, it's fine.
-    
-    // Edge: set step threshold might be tuned per device. Use 1.15 as base.
-    // For better detection, we could calibrate but it's okay.
   })();
 </script>
 </body>
