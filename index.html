@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>🌍 Trail Tracker · Steps · Elevation · Map</title>
+  <!-- Leaflet (lightweight maps) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      background: #0b1a1f;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100dvh;
+      margin: 0;
+      padding: 8px;
+    }
+
+    .app-container {
+      max-width: 500px;
+      width: 100%;
+      background: #13262b;
+      border-radius: 32px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 0 2px #2e4c3e inset;
+      overflow: hidden;
+      backdrop-filter: blur(2px);
+      color: #e6f7f0;
+      display: flex;
+      flex-direction: column;
+      height: 95dvh;
+      max-height: 850px;
+    }
+
+    .header {
+      padding: 18px 20px 10px;
+      text-align: center;
+      border-bottom: 1px solid #2e5a4b;
+    }
+
+    .header h1 {
+      font-weight: 600;
+      font-size: 1.7rem;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .header h1 i {
+      font-size: 1.8rem;
+    }
+
+    .map-wrapper {
+      flex: 2;
+      min-height: 200px;
+      background: #1e3a2f;
+      margin: 10px 12px;
+      border-radius: 24px;
+      overflow: hidden;
+      border: 2px solid #3b6b58;
+      box-shadow: inset 0 0 0 1px #1f3d31, 0 6px 0 #0c1a14;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      background: #aad6c7;
+      z-index: 1;
+    }
+
+    /* Stats panel */
+    .stats-panel {
+      display: flex;
+      justify-content: space-around;
+      padding: 12px 8px;
+      background: #1a3a30;
+      margin: 0 12px 10px;
+      border-radius: 60px;
+      border: 1px solid #3b7a64;
+      box-shadow: inset 0 2px 3px #0e231c, 0 4px 0 #0b1e17;
+    }
+
+    .stat-card {
+      text-align: center;
+      flex: 1;
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #9dc6b3;
+      font-weight: 500;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 800;
+      line-height: 1.2;
+      color: #f2ffe6;
+      text-shadow: 0 2px 3px #0a1f16;
+    }
+
+    .stat-unit {
+      font-size: 0.8rem;
+      color: #b1dfcf;
+      margin-left: 3px;
+    }
+
+    .elevation-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0 16px 8px;
+    }
+
+    .elev-badge {
+      background: #1f4539;
+      padding: 8px 16px;
+      border-radius: 30px;
+      display: inline-block;
+      border: 1px solid #4d9f83;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      padding: 8px 12px 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      background: #2a5e4c;
+      border: none;
+      border-bottom: 4px solid #0e2b21;
+      color: white;
+      font-weight: bold;
+      font-size: 1.2rem;
+      padding: 14px 24px;
+      min-width: 120px;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 6px 0 #0b1e17, 0 2px 8px rgba(0,0,0,0.3);
+      transition: all 0.08s;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      flex: 1 1 0;
+    }
+
+    .btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 3px 0 #0b1e17, 0 2px 6px black;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      transform: none;
+      box-shadow: 0 4px 0 #0b1e17;
+      pointer-events: none;
+      filter: grayscale(0.5);
+    }
+
+    .btn.stop {
+      background: #5e3a3a;
+      border-bottom-color: #2e1c1c;
+    }
+
+    .btn.reset {
+      background: #3e4e5e;
+      border-bottom-color: #1f2a33;
+    }
+
+    .permission-hint {
+      font-size: 0.75rem;
+      padding: 0 20px 10px;
+      color: #8eb7a8;
+      text-align: center;
+    }
+
+    .leaflet-control-attribution {
+      font-size: 8px;
+      background: rgba(20, 40, 30, 0.7);
+      color: #ccc;
+    }
+
+    /* status strip */
+    .status {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #b6dfcf;
+      padding: 0 0 5px;
+    }
+  </style>
+</head>
+<body>
+<div class="app-container">
+  <div class="header">
+    <h1>
+      <span>🗺️ TRAIL</span>
+      <span style="font-weight:300;">·</span>
+      <span>👣 STEP</span>
+    </h1>
+  </div>
+
+  <!-- Map container -->
+  <div class="map-wrapper">
+    <div id="map"></div>
+  </div>
+
+  <!-- Live stats: steps, distance -->
+  <div class="stats-panel">
+    <div class="stat-card">
+      <div class="stat-label">👟 STEPS</div>
+      <div class="stat-value" id="stepsDisplay">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">📏 DISTANCE</div>
+      <div class="stat-value"><span id="distanceDisplay">0.00</span><span class="stat-unit">km</span></div>
+    </div>
+  </div>
+
+  <!-- Elevation row -->
+  <div class="elevation-row">
+    <div class="elev-badge">⬆️ ELEV <span id="elevationDisplay">--</span> m</div>
+    <div class="elev-badge">📈 GAIN <span id="gainDisplay">0</span> m</div>
+  </div>
+
+  <div class="status" id="statusMessage">📍 Press START · allow location & motion</div>
+
+  <!-- Buttons -->
+  <div class="controls">
+    <button class="btn" id="startBtn">▶ START</button>
+    <button class="btn stop" id="stopBtn" disabled>⏹ STOP</button>
+    <button class="btn reset" id="resetBtn">🔄 RESET</button>
+  </div>
+  <div class="permission-hint">
+    ⚡ Steps use motion sensors · keep phone in pocket or hand. Elevation from GPS.
+  </div>
+</div>
+
+<script>
+  (function(){
+    "use strict";
+
+    // ---------- DOM elements ----------
+    const mapEl = document.getElementById('map');
+    const stepsDisplay = document.getElementById('stepsDisplay');
+    const distanceDisplay = document.getElementById('distanceDisplay');
+    const elevationDisplay = document.getElementById('elevationDisplay');
+    const gainDisplay = document.getElementById('gainDisplay');
+    const statusMessage = document.getElementById('statusMessage');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    // ---------- State ----------
+    let map;                       // Leaflet map
+    let routePolyline;            // Leaflet polyline
+    let currentMarker;            // Current position marker
+    let watchId = null;           // Geolocation watch ID
+    let stepListenerActive = false;
+    
+    // Tracking data
+    let positions = [];            // Array of {lat, lng, alt, timestamp}
+    let totalDistance = 0;         // in kilometers
+    let stepCount = 0;
+    let elevationGain = 0;         // cumulative positive gain (meters)
+    let lastAltitude = null;       // for gain calculation
+    
+    // Step detection (motion)
+    let stepDetectionEnabled = false;
+    let lastStepTime = 0;
+    const STEP_TIME_MIN = 280;      // ms between steps (max ~214 steps/min)
+    let accelWindow = [];
+    let stepThreshold = 1.15;       // g-force magnitude threshold (adjustable)
+    let lastMagnitude = 0;
+    let stepLock = false;
+
+    // Map defaults
+    const defaultCenter = [39.5, -98.0];  // geographic center US, will jump to user
+    const defaultZoom = 13;
+
+    // ---------- Initialize Map ----------
+    function initMap() {
+      map = L.map('map', {
+        attributionControl: true,
+        zoomControl: true,
+        preferCanvas: true,
+      }).setView(defaultCenter, defaultZoom);
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19,
+      }).addTo(map);
+      
+      // Initialize polyline (empty)
+      routePolyline = L.polyline([], {
+        color: '#ffd966',
+        weight: 6,
+        opacity: 0.9,
+        lineCap: 'round',
+        lineJoin: 'round',
+        smoothFactor: 1.5
+      }).addTo(map);
+      
+      // Marker for current location (will be updated)
+      currentMarker = L.marker(defaultCenter, {
+        icon: L.divIcon({
+          className: 'current-location-icon',
+          html: '<div style="background: #3b9eff; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px #1e90ff, 0 2px 4px black;"></div>',
+          iconSize: [22, 22],
+          iconAnchor: [11, 11]
+        })
+      }).addTo(map);
+    }
+
+    // ---------- Update UI stats ----------
+    function updateUI() {
+      stepsDisplay.textContent = stepCount;
+      distanceDisplay.textContent = totalDistance.toFixed(2);
+      
+      if (positions.length > 0) {
+        const lastPos = positions[positions.length-1];
+        if (lastPos.alt !== null && lastPos.alt !== undefined) {
+          elevationDisplay.textContent = Math.round(lastPos.alt);
+        } else {
+          elevationDisplay.textContent = '--';
+        }
+      } else {
+        elevationDisplay.textContent = '--';
+      }
+      gainDisplay.textContent = Math.round(elevationGain);
+    }
+
+    // ---------- Haversine distance (km) ----------
+    function haversine(lat1, lon1, lat2, lon2) {
+      const R = 6371; // Earth radius km
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+
+    // ---------- Process new position ----------
+    function processNewPosition(pos) {
+      const crd = pos.coords;
+      const lat = crd.latitude;
+      const lng = crd.longitude;
+      const alt = (crd.altitude !== null && crd.altitude !== undefined) ? crd.altitude : null;
+      const timestamp = pos.timestamp || Date.now();
+      
+      // Update map view & marker
+      map.setView([lat, lng], map.getZoom());
+      currentMarker.setLatLng([lat, lng]);
+      
+      // Add to route polyline
+      routePolyline.addLatLng([lat, lng]);
+      
+      // Distance calculation
+      if (positions.length > 0) {
+        const prev = positions[positions.length-1];
+        const segmentDist = haversine(prev.lat, prev.lng, lat, lng);
+        if (segmentDist > 0.001) { // filter tiny jumps
+          totalDistance += segmentDist;
+        }
+        
+        // Elevation gain (only positive)
+        if (lastAltitude !== null && alt !== null) {
+          const diff = alt - lastAltitude;
+          if (diff > 0.5 && diff < 50) {  // reasonable climb per update
+            elevationGain += diff;
+          }
+        }
+      } else {
+        // first point: set lastAltitude
+      }
+      
+      // Store position
+      positions.push({ lat, lng, alt, timestamp });
+      if (alt !== null) lastAltitude = alt;
+      
+      updateUI();
+    }
+
+    // ---------- Geolocation success callback ----------
+    function geoSuccess(position) {
+      processNewPosition(position);
+      statusMessage.textContent = '✅ Tracking · route live';
+    }
+
+    function geoError(err) {
+      console.warn('Geolocation error:', err);
+      let msg = '📍 GPS error';
+      if (err.code === 1) msg = '❌ Location permission denied';
+      else if (err.code === 2) msg = '❌ Position unavailable';
+      else if (err.code === 3) msg = '❌ Timeout';
+      statusMessage.textContent = msg;
+    }
+
+    // ---------- Start tracking (GPS + steps) ----------
+    function startTracking() {
+      if (watchId !== null) return;
+      
+      // Reset status
+      statusMessage.textContent = '🔄 Requesting GPS & motion...';
+      
+      // Geolocation options
+      const options = {
+        enableHighAccuracy: true,
+        maximumAge: 5000,
+        timeout: 15000
+      };
+      
+      // Clear old watch if any
+      if (watchId) navigator.geolocation.clearWatch(watchId);
+      
+      // Start geolocation watch
+      watchId = navigator.geolocation.watchPosition(geoSuccess, geoError, options);
+      
+      // Enable step detection
+      enableStepCounter();
+      
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+      statusMessage.textContent = '📍 Live · moving?';
+    }
+
+    // ---------- Stop tracking ----------
+    function stopTracking() {
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+      }
+      disableStepCounter();
+      
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+      statusMessage.textContent = '⏸️ Tracking paused';
+    }
+
+    // ---------- Reset everything ----------
+    function resetAll() {
+      // Stop first
+      stopTracking();
+      
+      // Clear data
+      positions = [];
+      totalDistance = 0;
+      stepCount = 0;
+      elevationGain = 0;
+      lastAltitude = null;
+      
+      // Clear map layers
+      routePolyline.setLatLngs([]);
+      // keep marker but move to default? Let's keep where it is or reset view later
+      if (positions.length === 0) {
+        // If no positions, maybe keep map view, but marker can stay
+      }
+      
+      // Reset step counter internal state
+      lastStepTime = 0;
+      accelWindow = [];
+      lastMagnitude = 0;
+      stepLock = false;
+      
+      updateUI();
+      statusMessage.textContent = '🔄 Reset · Press START';
+      
+      // optional: re-center map to default? but let user see last area.
+    }
+
+    // ---------- STEP DETECTION (DeviceMotion) ----------
+    function handleMotionEvent(event) {
+      if (!stepDetectionEnabled) return;
+      
+      const acc = event.accelerationIncludingGravity;
+      if (!acc) return;
+      
+      const x = acc.x || 0;
+      const y = acc.y || 0;
+      const z = acc.z || 0;
+      
+      const magnitude = Math.sqrt(x*x + y*y + z*z);
+      
+      // Simple low-pass filter for smoothing
+      if (accelWindow.length > 0) {
+        const last = accelWindow[accelWindow.length-1];
+        // weighted average (low pass)
+        const filtered = last * 0.7 + magnitude * 0.3;
+        accelWindow.push(filtered);
+      } else {
+        accelWindow.push(magnitude);
+      }
+      if (accelWindow.length > 10) accelWindow.shift();
+      
+      const currentMag = accelWindow[accelWindow.length-1];
+      
+      // Detect peak: crossing threshold
+      const now = Date.now();
+      if (!stepLock && currentMag > stepThreshold && lastMagnitude <= stepThreshold) {
+        // potential step, check time since last step
+        if (now - lastStepTime > STEP_TIME_MIN) {
+          stepCount++;
+          lastStepTime = now;
+          stepLock = true;
+          updateUI();
+          // brief lock to avoid double count
+          setTimeout(() => { stepLock = false; }, 200);
+        }
+      }
+      
+      lastMagnitude = currentMag;
+    }
+
+    function enableStepCounter() {
+      if (stepListenerActive) return;
+      
+      // Request permission for DeviceMotionEvent (iOS)
+      if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+        DeviceMotionEvent.requestPermission()
+          .then(permissionState => {
+            if (permissionState === 'granted') {
+              window.addEventListener('devicemotion', handleMotionEvent);
+              stepListenerActive = true;
+              stepDetectionEnabled = true;
+              statusMessage.textContent = '👣 Steps active + GPS';
+            } else {
+              statusMessage.textContent = '⚠️ Motion denied · steps disabled';
+              stepDetectionEnabled = false;
+            }
+          })
+          .catch(console.error);
+      } else {
+        // Standard browsers
+        window.addEventListener('devicemotion', handleMotionEvent);
+        stepListenerActive = true;
+        stepDetectionEnabled = true;
+        statusMessage.textContent = '👣 Step sensor on';
+      }
+    }
+
+    function disableStepCounter() {
+      if (stepListenerActive) {
+        window.removeEventListener('devicemotion', handleMotionEvent);
+        stepListenerActive = false;
+      }
+      stepDetectionEnabled = false;
+    }
+
+    // ---------- Event listeners ----------
+    startBtn.addEventListener('click', () => {
+      // Request permissions and start
+      if (!navigator.geolocation) {
+        alert('Geolocation not supported');
+        return;
+      }
+      startTracking();
+    });
+    
+    stopBtn.addEventListener('click', stopTracking);
+    
+    resetBtn.addEventListener('click', () => {
+      resetAll();
+      // also optional clear map view to user location? we can keep as is.
+      if (positions.length === 0) {
+        // nothing
+      }
+    });
+
+    // ---------- Initialize everything ----------
+    initMap();
+    updateUI();
+    statusMessage.textContent = '📍 Press START · allow location & motion';
+    
+    // Handle page visibility / background: no special handling, but keep simple.
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      if (watchId) navigator.geolocation.clearWatch(watchId);
+      disableStepCounter();
+    });
+
+    // Additional: if user clicks reset, we may also want to reset step lock
+    // extra: detect if altitude is null, show N/A.
+    
+    // We also want to set initial view if positions come later, fine.
+    // Minor improvement: if GPS accuracy changes, it's fine.
+    
+    // Edge: set step threshold might be tuned per device. Use 1.15 as base.
+    // For better detection, we could calibrate but it's okay.
+  })();
+</script>
+</body>
+</html>
